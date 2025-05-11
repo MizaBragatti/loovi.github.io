@@ -1,0 +1,65 @@
+body {
+    background-color: rgb(69, 253, 214, 1);
+}
+
+.text-loovi-blue {
+    --tw-text-opacity: 1;
+    color: rgb(90 120 255 / var(--tw-text-opacity));
+}
+
+.text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+font-semibold {
+    font-weight: 600;
+}
+
+.mt-5 {
+    margin-top: 1.25rem;
+}
+
+.bg-transparent {
+    background-color: transparent;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.items-center {
+    align-items: center;
+}
+
+button {
+    --tw-bg-opacity: 1;
+    background-color: rgb(231 29 141 / var(--tw-bg-opacity));
+}
+
+table,
+th,
+td {
+    border: 1px solid;
+}
+
+div {
+    display: inline;
+}
+
+label {
+    font-weight: bold;
+}
+
+
+label,
+input,
+table,
+button,
+textarea {
+    display: none;
+}
