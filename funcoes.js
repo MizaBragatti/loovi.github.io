@@ -107,7 +107,7 @@ function calculaMensalidade() {
         primeiraMensalidadeCompleto = 0,
         primeiraMensalidadeSemVidro = 0,
         valorColisao = 0,
-        valorVidros = 0,
+        valorVidros = 30.00,
         valorAtivacao = 299.90,
         valorTotal = 0,
         descontoMG = 10;
@@ -186,6 +186,7 @@ function calculaMensalidade() {
     if (document.getElementById('sul').checked) {
         valorMensalidade = valoresSul[0][indice];
         valorColisao = valoresSul[1][indice];
+        valorVidros = valoresSul[4];
 
         if (document.getElementById('suv').checked)
             valorMensalidade = valorMensalidade + valoresSul[2];
@@ -197,6 +198,7 @@ function calculaMensalidade() {
     if (document.getElementById('mg').checked) {
         valorMensalidade = valoresMG[0][indice];
         valorColisao = valoresMG[1][indice];
+        valorVidros = valoresMG[4];
 
         if (document.getElementById('suv').checked)
             valorMensalidade = valorMensalidade + valoresMG[2];
@@ -208,6 +210,7 @@ function calculaMensalidade() {
     if (document.getElementById('rj').checked) {
         valorMensalidade = valoresRJ[0][indice];
         valorColisao = valoresRJ[1][indice];
+        valorVidros = valoresRJ[4];
 
         if (document.getElementById('suv').checked)
             valorMensalidade = valorMensalidade + valoresRJ[2];
@@ -216,31 +219,25 @@ function calculaMensalidade() {
             valorMensalidade = valorMensalidade + valoresRJ[3];
     }
 
-    if (document.getElementById('vidro').checked) {
-        valorVidros = 30.0;
-        if (document.getElementById('sul').checked)
-            valorVidros = valoresSul[4];
-        if (document.getElementById('mg').checked)
-            valorVidros = valoresMG[4];
-        if (document.getElementById('rj').checked)
-            valorVidros = valoresRJ[4];
-
-        tipoSeguro = tipoSeguro + ' + vidros'
-    }
+    tipoSeguro = tipoSeguro + ' + vidros';
 
     document.getElementById('colisaoEssencial').innerHTML = 0;
 
-    primeiraMensalidadeEssencial = ((valorMensalidade + valorVidros + valorAtivacao).toFixed(2));
+    //Essencial
+    valorMensalidadeEssencial = ((valorMensalidade).toFixed(2));
+    primeiraMensalidadeEssencial = ((valorMensalidade + valorAtivacao).toFixed(2));
     document.getElementById('primeiraMensalidadeEssencial').innerHTML = formatoBRL(primeiraMensalidadeEssencial);
 
-    let totalEssencial = ((valorMensalidade + valorVidros).toFixed(2));
+    let totalEssencial = ((valorMensalidade).toFixed(2));
     document.getElementById('totalEssencial').innerHTML = formatoBRL(totalEssencial);
 
-    let totalAnualEssencial = (((valorMensalidade + valorVidros) * 12) + valorAtivacao).toFixed(2);
+    let totalAnualEssencial = (((valorMensalidade) * 12) + valorAtivacao).toFixed(2);
     document.getElementById('totalAnualEssencial').innerHTML = formatoBRL(totalAnualEssencial);
 
     document.getElementById('colisaoCompleto').innerHTML = formatoBRL(valorColisao);
 
+    //Completo
+    valorMensalidadeCompleto = (valorMensalidade + valorColisao + valorVidros).toFixed(2);
     primeiraMensalidadeCompleto = (valorMensalidade + valorColisao + valorVidros + valorAtivacao).toFixed(2);
     document.getElementById('primeiraMensalidadeCompleto').innerHTML = formatoBRL(primeiraMensalidadeCompleto);
 
@@ -250,6 +247,8 @@ function calculaMensalidade() {
     let totalAnualCompleto = (((valorMensalidade + valorColisao + valorVidros) * 12) + valorAtivacao).toFixed(2);
     document.getElementById('totalAnualCompleto').innerHTML = formatoBRL(totalAnualCompleto);
 
+    //Sem vidros
+    valorMensalidadeSemVidro = (valorMensalidade + valorColisao).toFixed(2);
     primeiraMensalidadeSemVidro = (valorMensalidade + valorColisao + valorAtivacao).toFixed(2);
 
     let totalSemVidro = (valorMensalidade + valorColisao).toFixed(2);
@@ -257,16 +256,23 @@ function calculaMensalidade() {
     let totalAnualSemVidro = (((valorMensalidade + valorColisao) * 12) + valorAtivacao).toFixed(2);
 
     //Frases
-    document.getElementById('fraseEssencial').innerHTML = "Seguro Essencial valor total " + formatoBRL(totalAnualEssencial) + ". " +
-        "Valor de entrada de apenas " + formatoBRL(primeiraMensalidadeEssencial) + " no cartão de crédito + 11 parcelas sem juros de " + formatoBRL(totalEssencial) +
+    document.getElementById('fraseEssencial').innerHTML = "Seguro Essencial no Plano Anual é de " +
+        formatoBRL(totalAnualEssencial) + " em até 12x de " + formatoBRL(valorMensalidadeEssencial) + " no cartão. " +
+        "Já no Plano Recorrente Mensal o Valor da entrada é de " + formatoBRL(primeiraMensalidadeEssencial) +
+        " no cartão de crédito + mensais sem juros de " + formatoBRL(totalEssencial) +
         " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
 
-    document.getElementById('fraseCompleto').innerHTML = "Seguro Completo com colisão e vidros, cobertura total valor total " + formatoBRL(totalAnualCompleto) + ". " +
-        "Valor de entrada de apenas " + formatoBRL(primeiraMensalidadeCompleto) + " no cartão de crédito + 11 parcelas sem juros de " + formatoBRL(totalCompleto) +
+    document.getElementById('fraseCompleto').innerHTML = "Seguro Completo com Colisão no Plano Anual é de " +
+        formatoBRL(totalAnualCompleto) + " em até 12x de " + formatoBRL(valorMensalidadeCompleto) + " no cartão. " +
+        "Já no Plano Recorrente Mensal o Valor da entrada é de " + formatoBRL(primeiraMensalidadeCompleto) +
+        " no cartão de crédito + mensais sem juros de " + formatoBRL(totalCompleto) +
         " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
 
-    document.getElementById('fraseSemVidro').innerHTML = "Seguro Completo com colisão, cobertura total valor total " + formatoBRL(totalAnualSemVidro) + ". " +
-        "Valor de entrada de apenas " + formatoBRL(primeiraMensalidadeSemVidro) + " no cartão de crédito + 11 parcelas sem juros de " + formatoBRL(totalSemVidro) +
+    document.getElementById('fraseSemVidro').innerHTML = "Seguro Completo com Colisão e Opcional Vidros " +
+        "(faróis, lanternas e retrovisores) no Plano Anual é de " + formatoBRL(totalAnualSemVidro) + " em até 12x de " +
+        formatoBRL(valorMensalidadeSemVidro) + " no cartão. " +
+        "Já no Plano Recorrente Mensal o Valor da entrada é de " + formatoBRL(primeiraMensalidadeSemVidro) +
+        " no cartão de crédito + mensais sem juros de " + formatoBRL(totalSemVidro) +
         " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
 
     document.getElementById('miza').style.display = 'block';
@@ -352,7 +358,7 @@ function buscaPlaca() {
 let nome, email, telFormatado, tel, link;
 
 function verificarVendedor() {
-    
+
     nome = 'Eliel Bragatti';
     email = 'eliel.ligea@gmail.com';
     telFormatado = '(11) 933.899.459';
