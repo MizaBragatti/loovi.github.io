@@ -32,7 +32,7 @@
     <input id="sul" type="checkbox" onchange="calculaMensalidade()"><label>SUL</label>
     <input id="suv" type="checkbox" onchange="calculaMensalidade()"><label>SUV</label>
     <input id="util" type="checkbox" onchange="calculaMensalidade()"><label>Utilitário</label>
-    <input id="vidro" type="checkbox" onchange="calculaMensalidade()"><label>Vidro</label>
+
     <table id="tabelaValores">
         <tr>
             <th>Plano</th>
@@ -56,24 +56,25 @@
             <td id="totalAnualCompleto"></td>
         </tr>
     </table>
-
+    <label>Essencial:</label><br>
     <textarea id="fraseEssencial" style="height: 80px; width: 510px;"></textarea>
     <button onclick="document.getElementById('fraseEssencial').select();">Selecionar</button><br>
-    <textarea id="fraseCompleto" style="height: 80px; width: 510px;"></textarea>
-    <button onclick="document.getElementById('fraseCompleto').select();">Selecionar</button><br>
-
+    <label>Sem vidro:</label><br>
     <textarea id="fraseSemVidro" style="height: 80px; width: 510px;"></textarea>
     <button onclick="document.getElementById('fraseSemVidro').select();">Selecionar</button><br>
+    <label>Completo:</label><br>
+    <textarea id="fraseCompleto" style="height: 80px; width: 510px;"></textarea>
+    <button onclick="document.getElementById('fraseCompleto').select();">Selecionar</button><br>
 
     <br><br>
     <input id="miza" type="checkbox" style="display: none;"><label id="lblMiza" style="display: none;">Miza</label>
     <input id="sofia" type="checkbox" style="display: none;"><label id="lblSofia" style="display: none;">Sofia</label>
     <button id="btnGerarPDFEssencial" onclick="gerarPDF('PDF-Essencial')" style="display: none;">Gerar PDF -
         Essencial</button>
-    <button id="btnGerarPDFCompleto" onclick="gerarPDF('PDF-Completo')" style="display: none;">Gerar PDF -
-        Completo</button>
     <button id="btnGerarPDFSemVidros" onclick="gerarPDF('PDF-SemVidros')" style="display: none;">Gerar PDF - Sem
         vidros</button>
+    <button id="btnGerarPDFCompleto" onclick="gerarPDF('PDF-Completo')" style="display: none;">Gerar PDF -
+        Completo</button>
 
 
     <script src="constantes.js"></script>
