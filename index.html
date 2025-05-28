@@ -17,6 +17,7 @@
     <h1 class="text-loovi-blue text-3xl text-center font-semibold mt-5">Consulta FIPE - Planos</h1>
     <label style="display: inline;">Informe a placa/Valor FIPE:</label>
     <input id="placa" maxlength="7" onkeyup="verificarPlaca()" style="display: inline;" autofocus="true"><br><br>
+    <!--
     <label>Ano: </label>
     <div id="ano"></div>
     <label>Modelo: </label>
@@ -27,6 +28,9 @@
     <div id="tipo"></div><br>
     <label>Valor: </label>
     <div id="valor"></div><br><br>
+    -->
+    <textarea id="dadosFipe" style="height: 80px; width: 510px;"></textarea>
+    <button onclick="document.getElementById('dadosFipe').select();">Selecionar</button><br>
     <input id="mg" type="checkbox" onchange="calculaMensalidade()"><label>MG</label>
     <input id="rj" type="checkbox" onchange="calculaMensalidade()"><label>RJ</label>
     <input id="sul" type="checkbox" onchange="calculaMensalidade()"><label>SUL</label>

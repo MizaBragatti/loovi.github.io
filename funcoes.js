@@ -345,14 +345,14 @@ function buscaPlaca() {
         return response.json();
     })
         .then(data => {
-
-            //console.log(valorFipe);
-            document.getElementById('ano').innerHTML = data.Ano;
-            document.getElementById('modelo').innerHTML = data.Modelo;
-            document.getElementById('fabricante').innerHTML = data.Fabricante;
-            document.getElementById('tipo').innerHTML = data.TipoVeculo;
+            document.getElementById('dadosFipe').innerHTML = `
+            Ano: ${data.Ano}
+            Modelo: ${data.Modelo}
+            Fabricante: ${data.Fabricante}
+            Tipo Veículo: ${data.TipoVeculo}
+            Valor FIPE: ${data.Fipe.Valor}
+            `;
             let valor = data.Fipe.Valor;
-            document.getElementById('valor').innerHTML = valor;
             let valorInteiro = parseInt((valor.replace("R$ ", "")).replace(",00", "").replace(".", ""));
             valorFipe = valorInteiro;
             calculaMensalidade();
