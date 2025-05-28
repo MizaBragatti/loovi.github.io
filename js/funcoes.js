@@ -345,7 +345,7 @@ function buscaPlaca() {
         return response.json();
     })
         .then(data => {
-            document.getElementById('dadosFipe').innerHTML = `
+            document.getElementById('dadosFipe').value = `
             Ano: ${data.Ano}
             Modelo: ${data.Modelo}
             Fabricante: ${data.Fabricante}
