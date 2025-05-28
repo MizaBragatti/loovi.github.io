@@ -63,3 +63,12 @@ button,
 textarea {
     display: none;
 }
+
+textarea {
+    width: 100%;
+    min-height: 90px;
+    max-width: 600px;
+    min-width: 200px;
+    box-sizing: border-box;
+    resize: vertical;
+}
