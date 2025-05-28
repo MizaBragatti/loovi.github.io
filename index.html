@@ -17,19 +17,7 @@
     <h1 class="text-loovi-blue text-3xl text-center font-semibold mt-5">Consulta FIPE - Planos</h1>
     <label style="display: inline;">Informe a placa/Valor FIPE:</label>
     <input id="placa" maxlength="7" onkeyup="verificarPlaca()" style="display: inline;" autofocus="true"><br><br>
-    <!--
-    <label>Ano: </label>
-    <div id="ano"></div>
-    <label>Modelo: </label>
-    <div id="modelo"></div><br>
-    <label>Fabricante: </label>
-    <div id="fabricante"></div>
-    <label>Tipo: </label>
-    <div id="tipo"></div><br>
-    <label>Valor: </label>
-    <div id="valor"></div><br><br>
-    -->
-    <textarea id="dadosFipe" style="height: 80px; width: 510px;"></textarea>
+    <textarea id="dadosFipe" ></textarea>
     <button onclick="document.getElementById('dadosFipe').select();">Selecionar</button><br>
     <input id="mg" type="checkbox" onchange="calculaMensalidade()"><label>MG</label>
     <input id="rj" type="checkbox" onchange="calculaMensalidade()"><label>RJ</label>
@@ -60,17 +48,18 @@
             <td id="totalAnualCompleto"></td>
         </tr>
     </table>
+
     <label>Essencial:</label><br>
-    <textarea id="fraseEssencial" style="height: 80px; width: 510px;"></textarea>
+    <textarea id="fraseEssencial"></textarea>
     <button onclick="document.getElementById('fraseEssencial').select();">Selecionar</button><br>
     <label>Sem vidro:</label><br>
-    <textarea id="fraseSemVidro" style="height: 80px; width: 510px;"></textarea>
+    <textarea id="fraseSemVidro"></textarea>
     <button onclick="document.getElementById('fraseSemVidro').select();">Selecionar</button><br>
     <label>Completo:</label><br>
-    <textarea id="fraseCompleto" style="height: 80px; width: 510px;"></textarea>
+    <textarea id="fraseCompleto"></textarea>
     <button onclick="document.getElementById('fraseCompleto').select();">Selecionar</button><br>
-
     <br><br>
+
     <input id="miza" type="checkbox" style="display: none;"><label id="lblMiza" style="display: none;">Miza</label>
     <input id="sofia" type="checkbox" style="display: none;"><label id="lblSofia" style="display: none;">Sofia</label>
     <button id="btnGerarPDFEssencial" onclick="gerarPDF('PDF-Essencial')" style="display: none;">Gerar PDF -
@@ -80,10 +69,9 @@
     <button id="btnGerarPDFCompleto" onclick="gerarPDF('PDF-Completo')" style="display: none;">Gerar PDF -
         Completo</button>
 
-
-    <script src="constantes.js"></script>
-    <script src="funcoes.js"></script>
-    <script src="templates.js"></script><!---->
+    <script src="js/constantes.js"></script>
+    <script src="js/funcoes.js"></script>
+    <script src="js/templates.js"></script>
 </body>
 
 </html>
