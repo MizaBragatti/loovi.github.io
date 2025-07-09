@@ -1,77 +1,103 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="pt-BR">
 <head>
-    <link rel="stylesheet" href="estilo.css">
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Busca Valores</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Consulta FIPE - Planos | Loovi Seguros</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+    <link rel="stylesheet" href="estilo.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
-
 </head>
 
 <body>
-    <h1 class="text-loovi-blue text-3xl text-center font-semibold mt-5">Consulta FIPE - Planos</h1>
-    <label style="display: inline;">Informe a placa/Valor FIPE:</label>
-    <input id="placa" maxlength="7" onkeyup="verificarPlaca()" style="display: inline;" autofocus="true"><br><br>
-    <textarea id="dadosFipe" ></textarea>
-    <button onclick="document.getElementById('dadosFipe').select();">Selecionar</button><br>
-    <input id="mg" type="checkbox" onchange="calculaMensalidade()"><label>MG</label>
-    <input id="rj" type="checkbox" onchange="calculaMensalidade()"><label>RJ</label>
-    <input id="sul" type="checkbox" onchange="calculaMensalidade()"><label>SUL</label>
-    <input id="suv" type="checkbox" onchange="calculaMensalidade()"><label>SUV</label>
-    <input id="util" type="checkbox" onchange="calculaMensalidade()"><label>Utilitário</label>
-
-    <table id="tabelaValores">
-        <tr>
-            <th>Plano</th>
-            <th>Colisão</th>
-            <th>Entrada</th>
-            <th>Mensal</th>
-            <th>Total Anual</th>
-        </tr>
-        <tr>
-            <td>Essencial</td>
-            <td id="colisaoEssencial"></td>
-            <td id="primeiraMensalidadeEssencial"></td>
-            <td id="totalEssencial"></td>
-            <td id="totalAnualEssencial"></td>
-        </tr>
-        <tr>
-            <td>Completo</td>
-            <td id="colisaoCompleto"></td>
-            <td id="primeiraMensalidadeCompleto"></td>
-            <td id="totalCompleto"></td>
-            <td id="totalAnualCompleto"></td>
-        </tr>
-    </table>
-
-    <label>Essencial:</label><br>
-    <textarea id="fraseEssencial"></textarea>
-    <button onclick="document.getElementById('fraseEssencial').select();">Selecionar</button><br>
-    <label>Sem vidro:</label><br>
-    <textarea id="fraseSemVidro"></textarea>
-    <button onclick="document.getElementById('fraseSemVidro').select();">Selecionar</button><br>
-    <label>Completo:</label><br>
-    <textarea id="fraseCompleto"></textarea>
-    <button onclick="document.getElementById('fraseCompleto').select();">Selecionar</button><br>
-    <br><br>
-
-    <input id="miza" type="checkbox" style="display: none;"><label id="lblMiza" style="display: none;">Miza</label>
-    <input id="sofia" type="checkbox" style="display: none;"><label id="lblSofia" style="display: none;">Sofia</label>
-    <button id="btnGerarPDFEssencial" onclick="gerarPDF('PDF-Essencial')" style="display: none;">Gerar PDF -
-        Essencial</button>
-    <button id="btnGerarPDFSemVidros" onclick="gerarPDF('PDF-SemVidros')" style="display: none;">Gerar PDF - Sem
-        vidros</button>
-    <button id="btnGerarPDFCompleto" onclick="gerarPDF('PDF-Completo')" style="display: none;">Gerar PDF -
-        Completo</button>
+    <div class="main-container">
+        <h1>Consulta FIPE - Planos</h1>
+        
+        <div class="form-group">
+            <label for="placa">Placa/Valor FIPE:</label>
+            <input id="placa" maxlength="7" onkeyup="verificarPlaca()" autocomplete="off" type="text" inputmode="text" pattern="[A-Za-z0-9]{0,7}">
+        </div>
+        
+        <div class="form-group">
+            <textarea id="dadosFipe" placeholder="Dados FIPE"></textarea>
+            <button type="button" onclick="document.getElementById('dadosFipe').select();">
+                <i class="fa-regular fa-copy"></i> Selecionar
+            </button>
+        </div>
+        
+        <div class="checkbox-group">
+            <label><input id="mg" type="checkbox" onchange="calculaMensalidade()"> MG</label>
+            <label><input id="rj" type="checkbox" onchange="calculaMensalidade()"> RJ</label>
+            <label><input id="sul" type="checkbox" onchange="calculaMensalidade()"> SUL</label>
+            <label><input id="suv" type="checkbox" onchange="calculaMensalidade()"> SUV</label>
+            <label><input id="util" type="checkbox" onchange="calculaMensalidade()"> Utilitário</label>
+        </div>
+        
+        <div class="card">
+            <table id="tabelaValores">
+                <tr>
+                    <th>Plano</th>
+                    <th>Colisão</th>
+                    <th>Entrada</th>
+                    <th>Mensal</th>
+                    <th>Total Anual</th>
+                </tr>
+                <tr>
+                    <td>Essencial</td>
+                    <td id="colisaoEssencial"></td>
+                    <td id="primeiraMensalidadeEssencial"></td>
+                    <td id="totalEssencial"></td>
+                    <td id="totalAnualEssencial"></td>
+                </tr>
+                <tr>
+                    <td>Completo</td>
+                    <td id="colisaoCompleto"></td>
+                    <td id="primeiraMensalidadeCompleto"></td>
+                    <td id="totalCompleto"></td>
+                    <td id="totalAnualCompleto"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="form-group">
+            <label for="fraseEssencial">Essencial:</label>
+            <textarea id="fraseEssencial" placeholder="Frase Essencial"></textarea>
+            <button type="button" onclick="document.getElementById('fraseEssencial').select();">
+                <i class="fa-regular fa-copy"></i> Selecionar
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label for="fraseSemVidro">Sem vidro:</label>
+            <textarea id="fraseSemVidro" placeholder="Frase Sem Vidro"></textarea>
+            <button type="button" onclick="document.getElementById('fraseSemVidro').select();">
+                <i class="fa-regular fa-copy"></i> Selecionar
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label for="fraseCompleto">Completo:</label>
+            <textarea id="fraseCompleto" placeholder="Frase Completo"></textarea>
+            <button type="button" onclick="document.getElementById('fraseCompleto').select();">
+                <i class="fa-regular fa-copy"></i> Selecionar
+            </button>
+        </div>
+        
+        <!-- Elementos ocultos -->
+        <input id="miza" type="checkbox" style="display: none;">
+        <label id="lblMiza" style="display: none;">Miza</label>
+        <input id="sofia" type="checkbox" style="display: none;">
+        <label id="lblSofia" style="display: none;">Sofia</label>
+        <button id="btnGerarPDFEssencial" onclick="gerarPDF('PDF-Essencial')" style="display: none;">Gerar PDF - Essencial</button>
+        <button id="btnGerarPDFSemVidros" onclick="gerarPDF('PDF-SemVidros')" style="display: none;">Gerar PDF - Sem vidros</button>
+        <button id="btnGerarPDFCompleto" onclick="gerarPDF('PDF-Completo')" style="display: none;">Gerar PDF - Completo</button>
+    </div>
+    
 
     <script src="js/constantes.js"></script>
     <script src="js/funcoes.js"></script>
     <script src="js/templates.js"></script>
 </body>
-
 </html>
