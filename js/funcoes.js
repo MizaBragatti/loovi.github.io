@@ -172,7 +172,7 @@ function calculaMensalidade() {
         indice = 14;
     }
 
-    if (valorFipe > 150000 ) {
+    if (valorFipe > 150000) {
         indice = 14;
     }
 
@@ -242,7 +242,7 @@ function calculaMensalidade() {
     document.getElementById('colisaoCompleto').innerHTML = formatoBRL(valorColisao);
 
     //Sem vidros
-    
+
     primeiraMensalidadeSemVidro = (valorMensalidade + valorColisao + valorAtivacao).toFixed(2);
 
     let totalSemVidro = (valorMensalidade + valorColisao).toFixed(2);
@@ -316,7 +316,15 @@ function mostrarElementos() {
 
 
     document.getElementsByTagName('table')[0].style.display = 'table';
-
+    
+    document.querySelectorAll('textarea').forEach(function (textarea) {
+    // Ajusta ao digitar, colar ou mudar valor
+    ['input', 'change', 'cut', 'paste', 'drop'].forEach(function (evt) {
+        textarea.addEventListener(evt, function () { autoResize(textarea); });
+    });
+    // Ajusta ao carregar a página
+    autoResize(textarea);
+});
 }
 
 function formatoBRL(valor) {
@@ -391,3 +399,9 @@ function verificarVendedor() {
         document.getElementById('util').checked = false;
     }
 }
+
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
