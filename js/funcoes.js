@@ -172,6 +172,10 @@ function calculaMensalidade() {
         indice = 14;
     }
 
+    if (valorFipe > 150000 ) {
+        indice = 14;
+    }
+
     valorMensalidade = valoresOutrosEstados[0][indice];
     valorColisao = valoresOutrosEstados[1][indice];
 
@@ -321,9 +325,10 @@ function formatoBRL(valor) {
 
 function buscaValor() {
     let placa = document.getElementById('placa').value;
-    let valor = placa;
-    document.getElementById('valor').innerHTML = valor;
-    let valorInteiro = parseInt((valor.replace("R$ ", "")).replace(",00", "").replace(".", ""));
+    let valor = parseInt(placa);
+
+    document.getElementById('dadosFipe').value = "Busca por valor: " + formatoBRL(valor);
+    let valorInteiro = parseInt((placa.replace("R$ ", "")).replace(",00", "").replace(".", ""));
     valorFipe = valorInteiro;
     calculaMensalidade();
 }
