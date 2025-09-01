@@ -1,6 +1,221 @@
 var valorFipe = 0;
 let tipoSeguro = 'Essencial';
 var plano = '', html = '', htmlBaixo = '';
+var jsonCotacao = {};
+
+
+let kl = (() => {
+    class n {
+        setObjSession(e, i) {
+            const r = JSON.stringify(e);
+            sessionStorage.setItem(i, r)
+        }
+        getObjSession(e) {
+            let i = {};
+            const r = sessionStorage.getItem(e);
+            return r && (i = JSON.parse(r)),
+                i
+        }
+        setStatePlans(e) {
+            this.selectedStatePlans = e,
+                this.setObjSession(e, "looviStatePlans")
+        }
+        getStatePlans() {
+            let e = this.getObjSession("looviStatePlans");
+            return e || (e = this.selectedStatePlans),
+                e
+        }
+        getPlanStateByPlanId(e, i) {
+            let r = "";
+            return i && (r = e.filter(s => s.idPlano == i)[0]),
+                r
+        }
+        getPlan() {
+            let e = this.getObjSession("looviPlan");
+            return "undefined" == e && alert(e),
+                e || (e = this.selectedPlan),
+                e
+        }
+        setPlan(e = "") {
+            let i = this.getState();
+            e || (e = this.getPlanId(i));
+            let r = this.getStatePlans();
+            if (r && r.length > 0) {
+                const o = this.getPlanStateByPlanId(r, e);
+                o && (this.selectedPlan = o,
+                    this.setObjSession(o, "looviPlan"))
+            }
+        }
+        getState() {
+            let e = sessionStorage.getItem("looviState");
+            return null === e ? e = "SP" : e || (e = this.selectedState),
+                e
+        }
+        getPlanId(e) {
+            let i = ""
+                , r = this.getOptionAnual();
+            return i = this.getOptionSmartCar() ? r ? `ROUBO_FURTO_PT_RAST_ANUAL_${e}` : `ROUBO_FURTO_PT_RAST_${e}` : r ? `ROUBO_FURTO_PT_ANUAL_${e}` : `ROUBO_FURTO_PT_${e}`,
+                sessionStorage.setItem("looviPlanId", i),
+                i
+        }
+        getOptionAnual() {
+            let e = !!sessionStorage.getItem("looviAnual");
+            return sessionStorage.getItem("looviAnual") || (e = this.optionAnual),
+                e
+        }
+        getOptionSmartCar() {
+            let e = !!sessionStorage.getItem("looviSmartCar");
+            return sessionStorage.getItem("looviSmartCar") || (e = this.optionSmartCar),
+                e
+        }
+        getPlanItem(e, i = "") {
+            if (!e || !e.itensPlano)
+                return null;
+            const o = e.itensPlano.filter(a => a.codigoItem == i);
+            return o.length ? o[0] : null
+        }
+        getAss24hPrice(e) {
+            return this.getPlanItem(e, "SRV_ASS24").preco
+        }
+        getCarroReservaPrice(e) {
+            return this.getPlanItem(e, "SRV_CARRO_RESERVA").preco
+        }
+        getRouboFurtoPrice(e, i) {
+            const r = this.getPlanItem(e, "SRV_ROUBO_FURTO");
+            return this.getPlanSubItemFipe(i, r, "SRV_FIPE_ROUBO_FURTO").preco
+        }
+        getPtRouboFurtoPrice(e, i) {
+            const r = this.getPlanItem(e, "SRV_PT_ROUBO_FURTO");
+            return this.getPlanSubItemFipe(i, r, "SRV_FIPE_PT_ROUBO_FURTO").preco
+        }
+        getAgravoPrice(e, i) {
+            const r = this.getPlanItem(e, "SRV_AGRAVO")
+                , o = i
+                , s = r.formularioSubItens.subItemPlano.filter(u => "SRV_SUB_AGRAVO" == u.codigoItem);
+            if (!s[0])
+                return;
+            const l = s[0].formularioCategorias.categoriaSubItem;
+            if (!l[0])
+                return;
+            const c = l.filter(u => u.codigoItem == o);
+            return c[0] ? c[0].preco : 0
+        }
+        getServicoLooviPrice(e, i, r) {
+            let o = 0;
+            const a = this.getPlanItem(e, "SRV_SERVICO_LOOVI")
+                , s = this.getPlanSubItemFipe(i, a, "SRV_FIPE_COM_COLISAO")
+                , l = this.getPlanSubItemFipe(i, a, "SRV_FIPE_SEM_COLISAO");
+            return o = r ? s.preco : l.preco,
+                o
+        }
+        getSegColisaoPrice(e, i) {
+            const r = this.getPlanItem(e, "SRV_SEGUROS_LTI")
+                , o = `CAT_FIPE_${i}K`
+                , s = r.formularioSubItens.subItemPlano.filter(u => "SRV_SEG_COLISAO" == u.codigoItem);
+            if (!s[0])
+                return 0;
+            const l = s[0].formularioCategorias.categoriaSubItem;
+            if (!l[0])
+                return 0;
+            const c = l.filter(u => u.codigoItem == o);
+            return c[0] ? c[0].preco : 0
+        }
+        getPlanSubItemFipe(e, i, r) {
+            const o = `CAT_FIPE_${e}K`
+                , s = i.formularioSubItens.subItemPlano.filter(u => u.codigoItem == r);
+            if (!s[0])
+                return;
+            const l = s[0].formularioCategorias.categoriaSubItem;
+            if (!l[0])
+                return;
+            const c = l.filter(u => u.codigoItem == o);
+            return c[0] ? c[0] : void 0
+        }
+        getCalcPlanPrice(e, i, r) {
+            let o = 0
+                , a = [{
+                    item: "SRV_ASS24",
+                    price: this.getAss24hPrice(e)
+                }, {
+                    item: "SRV_CARRO_RESERVA",
+                    price: this.getCarroReservaPrice(e)
+                }, {
+                    item: "SRV_ROUBO_FURTO",
+                    price: this.getRouboFurtoPrice(e, i)
+                }, {
+                    item: "SRV_PT_ROUBO_FURTO",
+                    price: this.getPtRouboFurtoPrice(e, i)
+                }, {
+                    item: "SRV_AGRAVO",
+                    price: this.getAgravoPrice(e, r.car)
+                }, {
+                    item: "SRV_SERVICO_LOOVI",
+                    price: this.getServicoLooviPrice(e, i, r.colisao)
+                }];
+            return r.colisao && (a.push({
+                item: "SRV_SEG_COLISAO",
+                price: this.getSegColisaoPrice(e, i)
+            }),
+                a.push({
+                    item: "SRV_SEG_TERCEIROS",
+                    price: this.getSegTerceirosPrice(e)
+                }),
+                a.push({
+                    item: "SRV_SEGUROS_LTI",
+                    price: this.getSegLtiPrice(e)
+                })),
+                r.vidros && a.push({
+                    item: "SRV_VIDROS",
+                    price: this.getVidrosPrice(e)
+                }),
+                r.smart && a.push({
+                    item: "SRV_SMART_CAR",
+                    price: this.getSmartPrice(e)
+                }),
+                a.forEach(s => {
+                    o += s.price
+                }
+                ),
+                o
+        }
+    }
+    return n;
+})();
+
+function buscarCotacaoSAP() {
+    const url = "https://ticjxjby64.execute-api.us-east-1.amazonaws.com/producao/proxy/v2/SAP";
+    const apiKey = "RRcW9gj2tZ6pSVsnbpmKhshpXC3yR9EklCwqQyh0";
+    const payload = "eyJ1cmwiOiJodHRwczovL3NhcGlpcy5sb292aS5jb20uYnI6NjAwMDAvcGxhbm8vQXBpL3YxL29idGVyUGxhbm9zUG9yRXN0YWRvL1NQL2FwcCIsIm1ldG9kbyI6IkdFVCIsImhlYWRlcnMiOnsicmVxdWVzdGVyIjoiUG9ydGFsIiwiY290YWNhbyI6IiJ9LCJib2R5Ijp7fX0==";
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+            "x-api-key": apiKey
+        },
+        body: JSON.stringify(payload)
+    })
+        .then(response => response.json())
+        .then(data => {
+            // A resposta é uma string base64 de um JSON
+            if (typeof data === "string") {
+                const jsonStr = atob(data);
+                const resultado = JSON.parse(jsonStr);
+                //jsonCotacao = JSON.parse(jsonStr);
+                let planService = new kl();
+                planService.setStatePlans(resultado);
+                planService.setPlan()
+                //console.log("Cotação SAP:", resultado);
+                // Exemplo: mostrar resultado em um textarea
+                // document.getElementById('dadosFipe').value = JSON.stringify(resultado, null, 2);
+            } else {
+                console.warn("Resposta inesperada:", data);
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao buscar cotação SAP:", error);
+        });
+}
 
 function copiarClipboard(opcao) {
     var input = '', saida = '';
@@ -100,6 +315,7 @@ function verificarPlaca() {
 function calculaMensalidade() {
 
     let indice = 0;
+    let looviFipe = 0;
     //Leve, Colisão, SUV, Util, Vidros
 
     let valorMensalidade = 0,
@@ -107,74 +323,105 @@ function calculaMensalidade() {
         primeiraMensalidadeCompleto = 0,
         primeiraMensalidadeSemVidro = 0,
         valorColisao = 0,
-        valorVidros = 30.00,
+        valorVidros = 35.00,
         valorAtivacao = 299.90,
         valorTotal = 0,
         descontoMG = 10;
 
     if (valorFipe > 0 && valorFipe <= 10000) {
         indice = 0;
+        looviFipe = 10;
     }
 
     if (valorFipe > 10000 && valorFipe <= 20000) {
         indice = 1;
+        looviFipe = 20;
     }
 
     if (valorFipe > 20000 && valorFipe <= 30000) {
         indice = 2;
+        looviFipe = 30;
     }
 
     if (valorFipe > 30000 && valorFipe <= 40000) {
         indice = 3;
+        looviFipe = 40;
     }
 
     if (valorFipe > 40000 && valorFipe <= 50000) {
         indice = 4;
+        looviFipe = 50;
     }
 
     if (valorFipe > 50000 && valorFipe <= 60000) {
         indice = 5;
+        looviFipe = 60;
     }
 
     if (valorFipe > 60000 && valorFipe <= 70000) {
         indice = 6;
+        looviFipe = 70; 
     }
 
     if (valorFipe > 70000 && valorFipe <= 80000) {
         indice = 7;
+        looviFipe = 80;
     }
 
     if (valorFipe > 80000 && valorFipe <= 90000) {
         indice = 8;
+        looviFipe = 90; 
     }
 
     if (valorFipe > 90000 && valorFipe <= 100000) {
         indice = 9;
+        looviFipe = 100;
     }
 
     if (valorFipe > 100000 && valorFipe <= 110000) {
         indice = 10;
+        looviFipe = 110;
     }
 
     if (valorFipe > 110000 && valorFipe <= 120000) {
         indice = 11;
+        looviFipe = 120;
     }
 
     if (valorFipe > 120000 && valorFipe <= 130000) {
         indice = 12;
+        looviFipe = 130;
     }
 
     if (valorFipe > 130000 && valorFipe <= 140000) {
         indice = 13;
+        looviFipe = 140;    
     }
 
     if (valorFipe > 140000 && valorFipe <= 150000) {
         indice = 14;
+        looviFipe = 150;
     }
 
     if (valorFipe > 150000) {
         indice = 14;
+        looviFipe = 150;
     }
+
+    // buscarCotacaoSAP();
+    // let planService = new kl();
+    // //planService.setStatePlans(jsonCotacao);
+    // //planService.setPlan()
+    // r = {
+    //     "car": "CAT_AGRAVO_VEICULO_LEVE",
+    //     "colisao": false,
+    //     "smart": false,
+    //     "vidros": false
+    // };
+    // e = planService.getPlan();
+    // i = looviFipe;
+
+    // valorMensalidade = planService.getCalcPlanPrice(e, i, r);
 
     valorMensalidade = valoresOutrosEstados[0][indice];
     valorColisao = valoresOutrosEstados[1][indice];
@@ -316,15 +563,15 @@ function mostrarElementos() {
 
 
     document.getElementsByTagName('table')[0].style.display = 'table';
-    
+
     document.querySelectorAll('textarea').forEach(function (textarea) {
-    // Ajusta ao digitar, colar ou mudar valor
-    ['input', 'change', 'cut', 'paste', 'drop'].forEach(function (evt) {
-        textarea.addEventListener(evt, function () { autoResize(textarea); });
+        // Ajusta ao digitar, colar ou mudar valor
+        ['input', 'change', 'cut', 'paste', 'drop'].forEach(function (evt) {
+            textarea.addEventListener(evt, function () { autoResize(textarea); });
+        });
+        // Ajusta ao carregar a página
+        autoResize(textarea);
     });
-    // Ajusta ao carregar a página
-    autoResize(textarea);
-});
 }
 
 function formatoBRL(valor) {
