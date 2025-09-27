@@ -215,3 +215,9 @@ input#placa {
     font-size: 2.0rem;
     height: 36px;
 }
+
+.group-calcular{
+    display: flex;
+    justify-content: space-between;
+}
+

@@ -2,6 +2,32 @@ var valorFipe = 0;
 let tipoSeguro = 'Essencial';
 var plano = '', html = '', htmlBaixo = '';
 var jsonCotacao = {};
+var primeiraMensalidadeEssencial = 0;
+var totalEssencial = 0;
+var totalAnualEssencial = 0;
+var primeiraMensalidadeCompleto = 0;
+var totalCompleto = 0;
+var totalAnualCompleto = 0;
+
+function salvarHistorico(dados) {
+    let historico =  obterHistorico()
+    historico.unshift(dados); 
+    if (historico.length > 10) {
+        historico = historico.slice(0, 5);
+    }
+    localStorage.setItem('historicoCalculos', JSON.stringify(historico));
+}
+
+function obterHistorico() {
+    return JSON.parse(localStorage.getItem('historicoCalculos')) || [];
+}
+
+function deletarHistorico(index) {
+    let historico = obterHistorico();
+    historico.splice(index, 1);
+    localStorage.setItem('historicoCalculos', JSON.stringify(historico));
+    mostrarHistorico(); // Recarrega o histórico
+}
 
 
 let kl = (() => {
@@ -476,13 +502,13 @@ function calculaMensalidade() {
 
     //Essencial
 
-    primeiraMensalidadeEssencial = ((valorMensalidade + valorAtivacao).toFixed(2));
+    primeiraMensalidadeEssencial = parseFloat((valorMensalidade + valorAtivacao).toFixed(2));
     document.getElementById('primeiraMensalidadeEssencial').innerHTML = formatoBRL(primeiraMensalidadeEssencial);
 
-    let totalEssencial = ((valorMensalidade).toFixed(2));
+    totalEssencial = parseFloat((valorMensalidade).toFixed(2));
     document.getElementById('totalEssencial').innerHTML = formatoBRL(totalEssencial);
 
-    let totalAnualEssencial = (((valorMensalidade) * 12) + valorAtivacao).toFixed(2);
+    totalAnualEssencial = parseFloat(((valorMensalidade * 12) + valorAtivacao).toFixed(2));
     document.getElementById('totalAnualEssencial').innerHTML = formatoBRL(totalAnualEssencial);
 
     let valorMensalidadeEssencial = ((totalAnualEssencial / 12).toFixed(2));
@@ -500,15 +526,15 @@ function calculaMensalidade() {
 
     //Completo
 
-    primeiraMensalidadeCompleto = (valorMensalidade + valorColisao + valorVidros + valorAtivacao).toFixed(2);
+    primeiraMensalidadeCompleto = parseFloat((valorMensalidade + valorColisao + valorVidros + valorAtivacao).toFixed(2));
     document.getElementById('primeiraMensalidadeCompleto').innerHTML = formatoBRL(primeiraMensalidadeCompleto);
 
-    let totalCompleto = (valorMensalidade + valorColisao + valorVidros).toFixed(2);
+    totalCompleto = parseFloat((valorMensalidade + valorColisao + valorVidros).toFixed(2));
     document.getElementById('totalCompleto').innerHTML = formatoBRL(totalCompleto);
 
-    let totalAnualCompleto = (((valorMensalidade + valorColisao + valorVidros) * 12) + valorAtivacao).toFixed(2);
+    totalAnualCompleto = parseFloat(((valorMensalidade + valorColisao + valorVidros) * 12 + valorAtivacao).toFixed(2));
     document.getElementById('totalAnualCompleto').innerHTML = formatoBRL(totalAnualCompleto);
-    valorMensalidadeCompleto = (totalAnualCompleto / 12).toFixed(2);
+    valorMensalidadeCompleto = parseFloat((totalAnualCompleto / 12).toFixed(2));
 
     //Frases
     document.getElementById('fraseEssencial').innerHTML = "Seguro Essencial no Plano Anual é de " +
@@ -533,9 +559,11 @@ function calculaMensalidade() {
     document.getElementById('miza').style.display = 'block';
     document.getElementById('sofia').style.display = 'block';
     mostrarElementos();
+    document.getElementById('btnSalvar').style.display = 'block';
     document.getElementById('btnGerarPDFEssencial').style.display = 'block';
     document.getElementById('btnGerarPDFCompleto').style.display = 'block';
     document.getElementById('btnGerarPDFSemVidros').style.display = 'block';
+
 
 }
 
@@ -650,5 +678,90 @@ function verificarVendedor() {
 function autoResize(textarea) {
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+function mostrarHistorico() {
+    const historico = obterHistorico();
+    const conteudo = document.getElementById('conteudoHistorico');
+    conteudo.innerHTML = '';
+
+    if (historico.length === 0) {
+        conteudo.innerHTML = '<p>Nenhum cálculo encontrado no histórico.</p>';
+    } else {
+        const primeiros5 = historico.slice(0, 5);
+        primeiros5.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.style.border = '1px solid #ccc';
+            div.style.padding = '10px';
+            div.style.marginBottom = '10px';
+            div.innerHTML = `
+            <div class= "group-calcular">
+                <h3>Cálculo ${index + 1} - ${item.data}</h3><button class="apagar">apagar</button>
+                </div>
+                <p><strong>Placa/Valor:</strong> ${item.placa}</p>
+                <p><strong>Dados FIPE:</strong> ${item.dadosFipe}</p>
+                <h4>Plano Essencial</h4>
+                <p>Primeira Mensalidade: ${formatoBRL(item.essencial.primeiraMensalidade)}</p>
+                <p>Mensal: ${formatoBRL(item.essencial.totalMensal)}</p>
+                <p>Total Anual: ${formatoBRL(item.essencial.totalAnual)}</p>
+                <h4>Plano Completo</h4>
+                <p>Primeira Mensalidade: ${formatoBRL(item.completo.primeiraMensalidade)}</p>
+                <p>Mensal: ${formatoBRL(item.completo.totalMensal)}</p>
+                <p>Total Anual: ${formatoBRL(item.completo.totalAnual)}</p>
+            `;
+            conteudo.appendChild(div);
+            apagarHistorico(div)
+        });
+    }
+
+    document.getElementById('modalHistorico').style.display = 'block';
+
+    // Adicionar listener para fechar ao clicar fora
+    document.addEventListener('click', fecharHistoricoFora);
+}
+
+var apagarHistorico = (div) => {
+  var buttonApagar = document.querySelectorAll(".apagar");
+
+  buttonApagar.forEach((button, index) => {
+    button.addEventListener("click", () => {
+      var dataHistorico = obterHistorico();
+      dataHistorico.splice(index, 1);
+      localStorage.setItem('historicoCalculos', JSON.stringify(dataHistorico));
+      mostrarHistorico(); // Recarrega o histórico para atualizar a exibição
+    });
+  });
+};
+
+function fecharHistorico() {
+    document.getElementById('modalHistorico').style.display = 'none';
+    document.removeEventListener('click', fecharHistoricoFora);
+}
+
+function fecharHistoricoFora(event) {
+    const modal = document.getElementById('modalHistorico');
+    if (event.target === modal) {
+        fecharHistorico();
+    }
+}
+
+function salvarDados() {
+    const dadosHistorico = {
+        placa: document.getElementById('placa').value,
+        dadosFipe: document.getElementById('dadosFipe').value,
+        essencial: {
+            primeiraMensalidade: primeiraMensalidadeEssencial,
+            totalMensal: totalEssencial,
+            totalAnual: totalAnualEssencial
+        },
+        completo: {
+            primeiraMensalidade: primeiraMensalidadeCompleto,
+            totalMensal: totalCompleto,
+            totalAnual: totalAnualCompleto
+        },
+        data: new Date().toLocaleString('pt-BR')
+    };
+    salvarHistorico(dadosHistorico);
+    alert('Dados salvos no histórico!');
 }
 
