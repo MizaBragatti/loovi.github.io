@@ -76,6 +76,100 @@ function getBaseFromLocalStorage(estado) {
 // Default estados list used across the app
 const DEFAULT_ESTADOS = ['MG', 'SP', 'RJ', 'SC', 'RS'];
 
+// Counter localStorage keys
+const COUNTER_KEYS = {
+  total: 'contadorTotal',
+  hoje: 'contadorHoje',
+  semana: 'contadorSemana',
+  mes: 'contadorMes',
+  ano: 'contadorAno',
+  hojeDate: 'contadorHojeDate',
+  semanaDate: 'contadorSemanaDate',
+  mesDate: 'contadorMesDate',
+  anoDate: 'contadorAnoDate'
+};
+
+// Get start of week (Monday)
+function getStartOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff)).toISOString().split('T')[0];
+}
+
+// Load counters from localStorage
+function loadCounters() {
+  return {
+    total: parseInt(localStorage.getItem(COUNTER_KEYS.total)) || 0,
+    hoje: parseInt(localStorage.getItem(COUNTER_KEYS.hoje)) || 0,
+    semana: parseInt(localStorage.getItem(COUNTER_KEYS.semana)) || 0,
+    mes: parseInt(localStorage.getItem(COUNTER_KEYS.mes)) || 0,
+    ano: parseInt(localStorage.getItem(COUNTER_KEYS.ano)) || 0,
+    hojeDate: localStorage.getItem(COUNTER_KEYS.hojeDate) || '',
+    semanaDate: localStorage.getItem(COUNTER_KEYS.semanaDate) || '',
+    mesDate: localStorage.getItem(COUNTER_KEYS.mesDate) || '',
+    anoDate: localStorage.getItem(COUNTER_KEYS.anoDate) || ''
+  };
+}
+
+// Save counters to localStorage
+function saveCounters(counters) {
+  localStorage.setItem(COUNTER_KEYS.total, counters.total);
+  localStorage.setItem(COUNTER_KEYS.hoje, counters.hoje);
+  localStorage.setItem(COUNTER_KEYS.hojeDate, counters.hojeDate);
+  localStorage.setItem(COUNTER_KEYS.semana, counters.semana);
+  localStorage.setItem(COUNTER_KEYS.semanaDate, counters.semanaDate);
+  localStorage.setItem(COUNTER_KEYS.mes, counters.mes);
+  localStorage.setItem(COUNTER_KEYS.mesDate, counters.mesDate);
+  localStorage.setItem(COUNTER_KEYS.ano, counters.ano);
+  localStorage.setItem(COUNTER_KEYS.anoDate, counters.anoDate);
+}
+
+// Increment counters on quote
+function incrementCounters() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const startOfWeek = getStartOfWeek(now);
+  const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear());
+
+  let counters = loadCounters();
+
+  counters.total += 1;
+
+  if (counters.hojeDate !== today) {
+    counters.hoje = 1;
+    counters.hojeDate = today;
+  } else {
+    counters.hoje += 1;
+  }
+
+  if (counters.semanaDate !== startOfWeek) {
+    counters.semana = 1;
+    counters.semanaDate = startOfWeek;
+  } else {
+    counters.semana += 1;
+  }
+
+  if (counters.mesDate !== month) {
+    counters.mes = 1;
+    counters.mesDate = month;
+  } else {
+    counters.mes += 1;
+  }
+
+  if (counters.anoDate !== year) {
+    counters.ano = 1;
+    counters.anoDate = year;
+  } else {
+    counters.ano += 1;
+  }
+
+  saveCounters(counters);
+  return counters;
+}
+
+
 // Cache metadata key and TTL (ms). TTL default 24 hours.
 const BASE_META_KEY = 'baseValues_meta';
 const BASE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -1066,12 +1160,12 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       }
 
       updateStats() {
-        const stats = this.getStats();
-        document.getElementById('totalCotacoes').textContent = stats.total;
-        document.getElementById('cotacoesHoje').textContent = stats.today;
-        document.getElementById('cotacoesSemana').textContent = stats.week;
-        document.getElementById('cotacoesMes').textContent = stats.month;
-        document.getElementById('cotacoesAno').textContent = stats.year;
+        const counters = loadCounters();
+        document.getElementById('totalCotacoes').textContent = counters.total;
+        document.getElementById('cotacoesHoje').textContent = counters.hoje;
+        document.getElementById('cotacoesSemana').textContent = counters.semana;
+        document.getElementById('cotacoesMes').textContent = counters.mes;
+        document.getElementById('cotacoesAno').textContent = counters.ano;
       }
 
       getStats() {
@@ -1310,6 +1404,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         };
         quotes.push(newQuote);
         localStorage.setItem('quotes', JSON.stringify(quotes));
+        incrementCounters();
         console.log('Quote saved:', newQuote);
       }
 

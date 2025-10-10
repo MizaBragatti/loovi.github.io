@@ -247,6 +247,13 @@ button:hover {
 /* =========================
    HISTÓRICO / MODAL
    ========================= */
+   .historico-list{
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  padding: 0 5rem;
+
+}
 .modalHistorico {
   position: fixed;
   inset: 0;
@@ -270,11 +277,11 @@ button:hover {
   transition: transform 0.3s ease;
   border-radius: 2rem;
   background: #fff;
-  padding: 2rem;
+  cursor: pointer;
+
   width: 720px;
   max-height: 100vh;
   box-shadow: var(--shadow-strong);
-  overflow-y: auto;
 }
 
 .modalHistorico.hidden .conteudoHistorico {
@@ -300,7 +307,7 @@ button:hover {
 }
 
 .input-buscar {
-  width: 100%;
+  width: 50%;
   max-width: 720px;
   margin: 1rem auto;
   border: 1px solid #ccc;
@@ -318,7 +325,7 @@ button:hover {
 #listaCotacoes {
   max-height: 400px;
   width: 100%;
-  max-width: 720px;
+  max-width: 570px;
   overflow-y: auto;
   border: 1px solid #e3ecf7;
   border-radius: 0.5rem;
@@ -330,7 +337,7 @@ button:hover {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 0.5rem;
-  padding: 0.5rem;
+  padding: 1.5rem;
   margin-bottom: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -340,6 +347,7 @@ button:hover {
 }
 h3 {
   text-align: center;
+  margin:1rem;
 }
 .cotacao-item p {
   font-size: 0.9rem;
@@ -347,24 +355,19 @@ h3 {
 
 /* ===== CORREÇÃO DO BOTÃO FECHAR ===== */
 .fecharHistorico {
-  position: absolute;
-  bottom: 0.5rem;
-  left: 50%;
   transform: translateX(-50%);
-  background: #dc3545;
-  color: #fff;
+  margin-left: 50%;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
-  transition: background 0.2s ease;
+  transition: transform 0.15s ease, background 0.2s;
   z-index: 10000;
 }
 .fecharHistorico:hover {
-  background: #b52a37;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(-2px) scale(1.03);
 }
 
 
@@ -443,115 +446,23 @@ tbody {
 }
 
 /* =========================
-   RESPONSIVIDADE
+   RESPONSIVO PARA HISTÓRICO
    ========================= */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .conteudoHistorico {
+    width: 95vw;
+    max-width: none;
     padding: 1rem;
-    width: calc(100vw - 2rem);
-    border-radius: 1rem;
   }
-  .conteudoHistorico h2 {
-    font-size: 1.1rem;
+  .historico-list {
+    padding: 0 1rem;
   }
-  #dadosFipe,
-  #fraseEssencial,
-  #fraseVidro,
-  #fraseCompleto,
   .input-buscar {
-    width: 100%;
-    max-width: 100%;
-  }
-  #dadosFipe,
-  #fraseEssencial,
-  #fraseVidro,
-  #fraseCompleto {
-    max-height: 60vh;
-    min-height: 20vh;
-  }
-  .cotacao-item {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .btn-delete {
-    width: auto;
-    margin-top: 0.5rem;
+    width: 90%;
   }
   #listaCotacoes {
-    max-height: 50vh;
+    max-width: none;
     width: 100%;
   }
 }
 
-@media (max-width: 480px) {
-  .main {
-    max-width: 100%;
-    padding: 0.75rem;
-    margin: 1rem auto;
-    border-radius: 0.75rem;
-  }
-  .input-placa {
-    width: 100%;
-  }
-  .form-group-frase {
-    width: 100%;
-    gap: 1rem;
-  }
-  .frase {
-    width: 100%;
-    font-size: 16px;
-  }
-  .form-group-pdf {
-    width: 100%;
-    gap: 0.75rem;
-  }
-  .form-group-pdf button,
-  .btn-blue,
-  button {
-    width: 100%;
-    max-width: 100%;
-    font-size: 16px;
-    padding: 0.6rem 0.75rem;
-  }
-  #dadosFipe,
-  #fraseEssencial,
-  #fraseVidro,
-  #fraseCompleto {
-    width: 100%;
-    max-width: 100%;
-    min-height: 22vh;
-    max-height: 70vh;
-    padding: 0.6rem;
-    font-size: 15px;
-  }
-  .card {
-    padding: 0.25rem;
-    overflow-x: auto;
-  }
-  #tabelaValores th,
-  #tabelaValores td {
-    padding: 0.5rem;
-    font-size: 14px;
-  }
-  .modalHistorico {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    padding-bottom: 2rem;
-  }
-  .conteudoHistorico {
-    width: calc(100vw - 2rem);
-    padding: 1rem;
-    border-radius: 1rem;
-    max-height: 80vh;
-  }
-  .stat-item p {
-    font-size: 1rem;
-    padding: 0.35rem 0.6rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .input-placa {
-    width: 25vw;
-  }
-}
