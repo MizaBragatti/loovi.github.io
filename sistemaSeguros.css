@@ -1,0 +1,557 @@
+/* =========================
+   VARIÁVEIS E RESET
+   ========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --color-main: #0a3d91;
+  --bg-start: #f5f7fa;
+  --bg-end: #e3ecf7;
+
+  --fs-base: 17px;
+  --fs-heading: 30px;
+  --fs-input: 17px;
+  --fs-label: 17px;
+  --fs-table: 16px;
+  --fs-button: 17px;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --shadow-soft: 0 6px 24px rgba(0, 0, 0, 0.06);
+  --shadow-strong: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================
+   BASE
+   ========================= */
+html,
+body {
+  height: 100%;
+}
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: var(--fs-base);
+  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* =========================
+   CONTAINER PRINCIPAL
+   ========================= */
+.main {
+  width: 100%;
+  max-width: 920px;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-soft);
+  margin: 0.5rem auto;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+/* =========================
+   TIPOGRAFIA
+   ========================= */
+.main h1 {
+  color: var(--color-main);
+  font-size: var(--fs-heading);
+  text-align: center;
+  margin: 2rem;
+}
+
+.group-btn-placa {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* =========================
+   FORMULÁRIO
+   ========================= */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+.form-group {
+  width: 100%;
+  text-align: center;
+}
+
+.label-input {
+  font-size: var(--fs-label);
+}
+
+.group-fipe {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.form-group-fipe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.form-group-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.form-group-check-box {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.form-group-check-box label {
+  font-size: var(--fs-label);
+  margin: 0 0.5rem;
+}
+
+.form-group-frase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+}
+.frase {
+  width: 100%;
+  font-size: var(--fs-input);
+}
+
+textarea {
+  font-size: var(--fs-input);
+  height: 20vh;
+  resize: none;
+}
+
+.input-placa {
+  padding: 0.5rem;
+  width: 20vw;
+  max-width: 100%;
+  margin: 0.5rem 0;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  font-size: var(--fs-input);
+}
+.input-placa:focus {
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
+}
+
+#dadosFipe {
+  width: 50vw;
+  max-width: 100%;
+  min-height: 140px;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  transition: 0.3s;
+  font-size: var(--fs-input);
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+#dadosFipe:focus {
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
+}
+
+#fraseEssencial,
+#fraseVidro,
+#fraseCompleto {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  resize: none;
+  font-size: var(--fs-input);
+  margin-top: 2rem;
+  max-height: 40vh;
+  overflow: auto;
+}
+#fraseEssencial:focus,
+#fraseVidro:focus,
+#fraseCompleto:focus {
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
+}
+
+/* =========================
+   BOTÕES
+   ========================= */
+.btn-blue,
+.fecharHistorico,
+.form-group-pdf button {
+  background: linear-gradient(90deg, var(--color-main) 60%, #3e7cb1 100%);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-button);
+  padding: 0.6rem 1rem;
+  transition: transform 0.15s ease, background 0.2s;
+}
+.btn-blue {
+  width: 100%;
+  max-width: 12rem;
+  height: 2.2rem;
+}
+button:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.btn-delete {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+.btn-delete:hover {
+  background: #c82333;
+}
+
+.img-historico {
+  width: 1.5rem;
+  cursor: pointer;
+}
+
+/* =========================
+   HISTÓRICO / MODAL
+   ========================= */
+.modalHistorico {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s;
+  z-index: 9999;
+  overflow: hidden;
+  cursor: pointer;
+}
+.modalHistorico.hidden {
+  display: flex;
+  opacity: 1;
+}
+.conteudoHistorico {
+  position: relative;
+  cursor: auto;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+  border-radius: 2rem;
+  background: #fff;
+  padding: 2rem;
+  width: 720px;
+  max-height: 100vh;
+  box-shadow: var(--shadow-strong);
+  overflow-y: auto;
+}
+
+.modalHistorico.hidden .conteudoHistorico {
+  transform: scale(1);
+}
+.container-placa {
+  display: flex;
+  gap: 0.5rem;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--color-main);
+  align-items: center;
+}
+.conteudoHistorico h2 {
+  font-size: 25px;
+  color: var(--color-main);
+  text-align: center;
+}
+.conteudoHistorico p {
+  text-align: center;
+  font-size: 1rem;
+}
+
+.input-buscar {
+  width: 100%;
+  max-width: 720px;
+  margin: 1rem auto;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  font-size: var(--fs-input);
+  display: block;
+}
+.input-buscar:focus {
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
+}
+
+#listaCotacoes {
+  max-height: 400px;
+  width: 100%;
+  max-width: 720px;
+  overflow-y: auto;
+  border: 1px solid #e3ecf7;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: #fafafa;
+  gap: 0.5rem;
+}
+.cotacao-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+h3 {
+  text-align: center;
+}
+.cotacao-item p {
+  font-size: 0.9rem;
+}
+
+/* ===== CORREÇÃO DO BOTÃO FECHAR ===== */
+.fecharHistorico {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
+  z-index: 10000;
+}
+.fecharHistorico:hover {
+  background: #b52a37;
+  transform: translateX(-50%);
+}
+
+
+
+/* =========================
+   STATS / TABELA / RESPONSIVO
+   ========================= */
+.stats {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stat-item label {
+  font-size: 0.9rem;
+  color: var(--color-main);
+  font-weight: 600;
+}
+.stat-item p {
+  font-size: 1.2rem;
+  color: #fff;
+  background: var(--color-main);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0;
+  transition: transform 0.2s;
+}
+.stat-item p:hover {
+  transform: translateY(-2px);
+}
+
+.card {
+  overflow-x: auto;
+  box-shadow: 0 2px 148px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  border-radius: 1rem;
+  margin-top: 2rem;
+}
+#tabelaValores {
+  border-collapse: collapse;
+  display: table;
+  background: #f5f7fa;
+}
+#tabela-header {
+  background: var(--color-main);
+  color: #fff;
+}
+#tabelaValores th,
+#tabelaValores td {
+  padding: 0.75rem;
+  font-size: var(--fs-table);
+}
+#tabelaValores th {
+  font-size: calc(var(--fs-table) + 1px);
+  font-weight: 600;
+}
+th,
+td {
+  display: table-cell;
+  text-align: center;
+}
+tr {
+  display: table-row;
+}
+tbody {
+  display: table-row-group;
+}
+
+/* =========================
+   RESPONSIVIDADE
+   ========================= */
+@media (max-width: 600px) {
+  .conteudoHistorico {
+    padding: 1rem;
+    width: calc(100vw - 2rem);
+    border-radius: 1rem;
+  }
+  .conteudoHistorico h2 {
+    font-size: 1.1rem;
+  }
+  #dadosFipe,
+  #fraseEssencial,
+  #fraseVidro,
+  #fraseCompleto,
+  .input-buscar {
+    width: 100%;
+    max-width: 100%;
+  }
+  #dadosFipe,
+  #fraseEssencial,
+  #fraseVidro,
+  #fraseCompleto {
+    max-height: 60vh;
+    min-height: 20vh;
+  }
+  .cotacao-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .btn-delete {
+    width: auto;
+    margin-top: 0.5rem;
+  }
+  #listaCotacoes {
+    max-height: 50vh;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    max-width: 100%;
+    padding: 0.75rem;
+    margin: 1rem auto;
+    border-radius: 0.75rem;
+  }
+  .input-placa {
+    width: 100%;
+  }
+  .form-group-frase {
+    width: 100%;
+    gap: 1rem;
+  }
+  .frase {
+    width: 100%;
+    font-size: 16px;
+  }
+  .form-group-pdf {
+    width: 100%;
+    gap: 0.75rem;
+  }
+  .form-group-pdf button,
+  .btn-blue,
+  button {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+    padding: 0.6rem 0.75rem;
+  }
+  #dadosFipe,
+  #fraseEssencial,
+  #fraseVidro,
+  #fraseCompleto {
+    width: 100%;
+    max-width: 100%;
+    min-height: 22vh;
+    max-height: 70vh;
+    padding: 0.6rem;
+    font-size: 15px;
+  }
+  .card {
+    padding: 0.25rem;
+    overflow-x: auto;
+  }
+  #tabelaValores th,
+  #tabelaValores td {
+    padding: 0.5rem;
+    font-size: 14px;
+  }
+  .modalHistorico {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-bottom: 2rem;
+  }
+  .conteudoHistorico {
+    width: calc(100vw - 2rem);
+    padding: 1rem;
+    border-radius: 1rem;
+    max-height: 80vh;
+  }
+  .stat-item p {
+    font-size: 1rem;
+    padding: 0.35rem 0.6rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .input-placa {
+    width: 25vw;
+  }
+}
