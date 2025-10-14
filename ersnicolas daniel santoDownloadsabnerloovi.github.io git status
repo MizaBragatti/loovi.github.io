@@ -1,0 +1,28 @@
+[33mdb59365[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m correção v2
+[33mdb1284b[m correçao v1
+[33mdb09e43[m Alterando valores de fixo para dinâmico
+[33mf04432a[m foi adicionado uma interface de historico
+[33m9129ae8[m Merge branch 'develop'
+[33meff0c9b[m alteracao valores atualizados
+[33m381fa89[m Merge branch 'develop'
+[33m2fdbe57[m ajuste de layout
+[33m6a5309f[m Merge branch 'develop'
+[33mba06ca3[m ajuste da busca por valor
+[33m596c7c8[m Merge branch 'develop'
+[33m28a6dbc[m restruturacao dos js
+[33m05c76cc[m Merge branch 'master' of https://github.com/MizaBragatti/loovi.github.io
+[33m1822b28[m alterando a forma como os dados da placa vem
+[33m54c2e27[m Merge pull request #3 from MizaBragatti/develop
+[33mec16550[m[33m ([m[1;31morigin/develop[m[33m)[m alterando valores dos planos e reordenando
+[33mdde6215[m Merge pull request #2 from MizaBragatti/develop
+[33mb7fab1d[m Alteracao dos textos e ordem das caixas
+[33ma0e1a3a[m Criando js e ajustando a criacao dos pdfs
+[33mb3b6967[m Alterando develop
+[33ma7e2a22[m Merge pull request #1 from MizaBragatti/campo_valor
+[33mc07ee45[m[33m ([m[1;31morigin/campo_valor[m[33m)[m Inclusao de tratamento por valor no campo de entrada
+[33mfe1b5e4[m Versao funcionando
+[33maf7bd0c[m updated page with emergency fix
+[33m0c5e0d4[m Remove file
+[33m7af91fe[m Update page removing line
+[33m85d9953[m Update page removing lines
+[33m0395b78[m First release of a project
