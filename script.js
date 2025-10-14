@@ -1,4 +1,3 @@
-
 async function loadBaseValues() {
   const key = 'baseValues';
   let baseValues = JSON.parse(localStorage.getItem(key)) || {};
@@ -797,6 +796,9 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           this.historic = document.querySelector(".modalHistorico") || document.createElement('div');
           this.fecharHistoric = document.querySelector(".fecharHistorico") || document.createElement('button');
           this.inputBuscar = document.querySelector(".input-buscar") || document.createElement('input');
+          this.planoCheckboxes = document.querySelectorAll('.checkbox-plano');
+          this.frases = {};
+          this.selectedPlano = null;
           // attach auto-resize listener for dadosFipe textarea
           // (call after DOMContentLoaded when Ui is instantiated)
           this.attachResizeListener();
@@ -854,24 +856,30 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                   document.getElementById('totalCompleto').textContent = this.formatBRL(computed.completo.mensal);
                   document.getElementById('totalAnualCompleto').textContent = this.formatBRL(computed.completo.anual);
 
-                  document.getElementById('fraseEssencial').value = "Seguro Essencial no Plano Anual é de " +
-                    this.formatBRL(computed.essencial.anual) + " em até 12x sem juros de " + this.formatBRL(computed.essencial.mensal) + " no cartão de crédito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.essencial.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.essencial.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                  // Store phrases in object for unified textarea
+                  this.frases = {
+                    essencial: "Seguro Essencial no Plano Anual é de " +
+                      this.formatBRL(computed.essencial.anual) + " em até 12x sem juros de " + this.formatBRL(computed.essencial.mensal) + " no cartão de crédito. " +
+                      "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.essencial.primeira) +
+                      " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.essencial.mensal) +
+                      " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
 
-                  document.getElementById('fraseVidro').value = "Seguro Completo com Colisão no Plano Anual é de " +
-                    this.formatBRL(computed.semVidro.anual) + " em até 12x sem juros de " + this.formatBRL(computed.semVidro.mensal) + " no cartão de crédito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.semVidro.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.semVidro.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                    semVidro: "Seguro Completo com Colisão no Plano Anual é de " +
+                      this.formatBRL(computed.semVidro.anual) + " em até 12x sem juros de " + this.formatBRL(computed.semVidro.mensal) + " no cartão de crédito. " +
+                      "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.semVidro.primeira) +
+                      " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.semVidro.mensal) +
+                      " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
 
-                  document.getElementById('fraseCompleto').value = "Seguro Completo com Colisão e Opcional Vidros " +
-                    "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(computed.completo.anual) + " em até 12x sem juros de " +
-                    this.formatBRL(computed.completo.mensal) + " no cartão credito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.completo.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.completo.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                    completo: "Seguro Completo com Colisão e Opcional Vidros " +
+                      "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(computed.completo.anual) + " em até 12x sem juros de " +
+                      this.formatBRL(computed.completo.mensal) + " no cartão credito. " +
+                      "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.completo.primeira) +
+                      " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.completo.mensal) +
+                      " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão."
+                  };
+
+                  // Update unified textarea based on selected checkbox
+                  this.updateFraseUnificada();
 
                   // Não é necessário consultar a API
                   return;
@@ -1010,25 +1018,30 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
               document.getElementById('totalCompleto').textContent = this.formatBRL(totalCompleto);
               document.getElementById('totalAnualCompleto').textContent = this.formatBRL(totalAnualCompleto);
 
-              // Set frases
-              document.getElementById('fraseEssencial').value = "Seguro Essencial no Plano Anual é de " +
-                this.formatBRL(totalAnualEssencial) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeEssencial) + " no cartão de crédito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeEssencial) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalEssencial) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+              // Store phrases in object for unified textarea
+              this.frases = {
+                essencial: "Seguro Essencial no Plano Anual é de " +
+                  this.formatBRL(totalAnualEssencial) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeEssencial) + " no cartão de crédito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeEssencial) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalEssencial) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
 
-              document.getElementById('fraseVidro').value = "Seguro Completo com Colisão no Plano Anual é de " +
-                this.formatBRL(totalAnualSemVidro) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeSemVidro) + " no cartão de crédito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeSemVidro) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalSemVidro) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                semVidro: "Seguro Completo com Colisão no Plano Anual é de " +
+                  this.formatBRL(totalAnualSemVidro) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeSemVidro) + " no cartão de crédito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeSemVidro) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalSemVidro) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
 
-              document.getElementById('fraseCompleto').value = "Seguro Completo com Colisão e Opcional Vidros " +
-                "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(totalAnualCompleto) + " em até 12x sem juros de " +
-                this.formatBRL(valorMensalidadeCompleto) + " no cartão credito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeCompleto) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalCompleto) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                completo: "Seguro Completo com Colisão e Opcional Vidros " +
+                  "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(totalAnualCompleto) + " em até 12x sem juros de " +
+                  this.formatBRL(valorMensalidadeCompleto) + " no cartão credito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeCompleto) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalCompleto) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão."
+              };
+
+              // Update unified textarea based on selected checkbox
+              this.updateFraseUnificada();
             } catch (error) {
               console.error("Erro ao calcular mensalidade:", error);
             }
@@ -1446,22 +1459,37 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           textarea.select();
         });
 
-        document.getElementById('btnCopiarFraseEssencial').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseEssencial');
+        document.getElementById('btnCopiarFrase').addEventListener('click', () => {
+          const textarea = document.getElementById('fraseUnificada');
           textarea.focus();
           textarea.select();
         });
+      }
 
-        document.getElementById('btnCopiarFraseVidro').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseVidro');
-          textarea.focus();
-          textarea.select();
-        });
+      updateFraseUnificada() {
+        const textarea = document.getElementById('fraseUnificada');
+        if (this.selectedPlano && this.frases[this.selectedPlano]) {
+          textarea.value = this.frases[this.selectedPlano];
+        } else {
+          textarea.value = '';
+        }
+        this.autoResizeTextarea(textarea);
+      }
 
-        document.getElementById('btnCopiarFraseCompleto').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseCompleto');
-          textarea.focus();
-          textarea.select();
+      planoCheckboxData() {
+        this.planoCheckboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', () => {
+            this.planoCheckboxes.forEach(box => {
+              if (box !== checkbox) box.checked = false;
+            });
+
+            if (checkbox.checked) {
+              this.selectedPlano = checkbox.dataset.plano;
+            } else {
+              this.selectedPlano = null;
+            }
+            this.updateFraseUnificada();
+          });
         });
       }
     }
@@ -1473,10 +1501,11 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
     const ui = new Ui();
     // expose for external/debug use (so gerarPDF/verificarPlaca can call methods)
     window.ui = ui;
-    
+
       ui.attachInputListener();
       ui.checkboxData();
       ui.sellerCheckboxData();
+      ui.planoCheckboxData();
       ui.modalHistoric();
 
       // Carrega estado salvo ou padrão SP
@@ -1500,10 +1529,8 @@ async function gerarPDF(nomeArquivo) {
     // chama verificarVendedor para popular vendedor no objeto ui
     if (window.ui && typeof window.ui.verificarVendedor === 'function') window.ui.verificarVendedor();
 
-    // coleta frases
-    const fraseEssencial = document.getElementById('fraseEssencial')?.value || '';
-    const fraseVidro = document.getElementById('fraseVidro')?.value || '';
-    const fraseCompleto = document.getElementById('fraseCompleto')?.value || '';
+    // coleta frase unificada
+    const fraseUnificada = document.getElementById('fraseUnificada')?.value || '';
 
     // coleta valores da tabela (se existirem)
     const totalEssencial = document.getElementById('totalEssencial')?.textContent || '';
@@ -1516,7 +1543,7 @@ async function gerarPDF(nomeArquivo) {
     if (window.ui && window.ui.vendedor) vendedor = window.ui.vendedor;
 
     // Monta HTML simples para o PDF
-    const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${nomeArquivo}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#222}header{background:#0a3d91;color:#fff;padding:12px;text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><header><h2>Loovi Seguros</h2></header><main style="padding:16px"><h3>${nomeArquivo}</h3><p><strong>Placa / Valor FIPE:</strong> ${placaOrValue}</p><h4>Frase</h4><p>${nomeArquivo.includes('Essencial')?fraseEssencial:(nomeArquivo.includes('SemVidros')?fraseVidro:fraseCompleto)}</p><h4>Valores</h4><table><tr><th>Item</th><th>Valor</th></tr><tr><td>Primeira Mensalidade</td><td>${nomeArquivo.includes('Essencial')?primeiraEssencial:primeiraCompleto}</td></tr><tr><td>Total Mensal</td><td>${nomeArquivo.includes('Completo')?totalCompleto:totalEssencial}</td></tr></table>${vendedor?`<h4>Vendedor</h4><p>${vendedor.nome} — ${vendedor.telFormatado ?? vendedor.tel}</p>`:''}</main></body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${nomeArquivo}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#222}header{background:#0a3d91;color:#fff;padding:12px;text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><header><h2>Loovi Seguros</h2></header><main style="padding:16px"><h3>${nomeArquivo}</h3><p><strong>Placa / Valor FIPE:</strong> ${placaOrValue}</p><h4>Frase</h4><p>${fraseUnificada}</p><h4>Valores</h4><table><tr><th>Item</th><th>Valor</th></tr><tr><td>Primeira Mensalidade</td><td>${nomeArquivo.includes('Essencial')?primeiraEssencial:primeiraCompleto}</td></tr><tr><td>Total Mensal</td><td>${nomeArquivo.includes('Completo')?totalCompleto:totalEssencial}</td></tr></table>${vendedor?`<h4>Vendedor</h4><p>${vendedor.nome} — ${vendedor.telFormatado ?? vendedor.tel}</p>`:''}</main></body></html>`;
 
     const postData = {
       fileName: nomeArquivo + '.pdf',
