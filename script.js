@@ -1,4 +1,3 @@
-
 async function loadBaseValues() {
   const key = 'baseValues';
   let baseValues = JSON.parse(localStorage.getItem(key)) || {};
@@ -315,14 +314,14 @@ function computeMensalidadesFromCache(estado, valorFipe, placa = null) {
 
   const valorAtivacao = 299.90;
 
-  const totalAnualEssencial = valorMensalidadeEssencial * 12;
-  const primeiraMensalidadeEssencial = valorAtivacao + valorMensalidadeEssencial;
+  const primeiraMensalidadeEssencial = valorMensalidadeEssencial + valorAtivacao;
+  const totalAnualEssencial = (valorMensalidadeEssencial * 12) + valorAtivacao;
 
-  const totalAnualSemVidro = valorMensalidadeSemVidro * 12;
-  const primeiraMensalidadeSemVidro = valorAtivacao + valorMensalidadeSemVidro;
+  const primeiraMensalidadeSemVidro = valorMensalidadeSemVidro + valorAtivacao;
+  const totalAnualSemVidro = (valorMensalidadeSemVidro * 12) + valorAtivacao;
 
-  const totalAnualCompleto = valorMensalidadeCompleto * 12;
-  const primeiraMensalidadeCompleto = valorAtivacao + valorMensalidadeCompleto;
+  const primeiraMensalidadeCompleto = valorMensalidadeCompleto + valorAtivacao;
+  const totalAnualCompleto = (valorMensalidadeCompleto * 12) + valorAtivacao;
 
   return {
     essencial: { mensal: valorMensalidadeEssencial, primeira: primeiraMensalidadeEssencial, anual: totalAnualEssencial },
@@ -449,14 +448,24 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
     const valorAtivacao = 299.90;
   
     // Totais
-    const totalAnualEssencial = valorMensalidadeEssencial * 12;
-    const primeiraMensalidadeEssencial = valorAtivacao + valorMensalidadeEssencial;
-  
-    const totalAnualSemVidro = valorMensalidadeSemVidro * 12;
-    const primeiraMensalidadeSemVidro = valorAtivacao + valorMensalidadeSemVidro;
-  
-    const totalAnualCompleto = valorMensalidadeCompleto * 12;
-    const primeiraMensalidadeCompleto = valorAtivacao + valorMensalidadeCompleto;
+    const primeiraMensalidadeEssencial = valorMensalidadeEssencial + valorAtivacao;
+    const totalAnualEssencial = (valorMensalidadeEssencial * 12) + valorAtivacao;
+ 
+    const primeiraMensalidadeSemVidro = valorMensalidadeSemVidro + valorAtivacao;
+    const totalAnualSemVidro = (valorMensalidadeSemVidro * 12) + valorAtivacao;
+ 
+    const primeiraMensalidadeCompleto = valorMensalidadeCompleto + valorAtivacao;
+    const totalAnualCompleto = (valorMensalidadeCompleto * 12) + valorAtivacao;
+ 
+    // Debug logging
+    console.log('computeMensalidadesFromCache - essencial:', valorMensalidadeEssencial);
+    console.log('computeMensalidadesFromCache - semVidro:', valorMensalidadeSemVidro);
+    console.log('computeMensalidadesFromCache - completo:', valorMensalidadeCompleto);
+
+    // Debug logging
+    console.log('calculateMensalidades - essencial:', valorMensalidadeEssencial);
+    console.log('calculateMensalidades - semVidro:', valorMensalidadeSemVidro);
+    console.log('calculateMensalidades - completo:', valorMensalidadeCompleto);
   
     return {
       essencial: {
@@ -564,7 +573,8 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                 return this.getPlanItem(e, "SRV_VIDROS").preco || 0;
             }
             getSmartPrice(e) {
-                return this.getPlanItem(e, "SRV_SMART_CAR").preco || 0;
+                const item = this.getPlanItem(e, "SRV_SMART_CAR");
+                return item ? item.preco : 0;
             }
             getCalcPlanPrice(e, i, r) {
                 let o = 0
@@ -638,6 +648,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           const data = await response.json();
           let jsonStr = typeof data === "string" ? atob(data) : "";
             let resultado = jsonStr ? JSON.parse(jsonStr) : data;
+            console.log(resultado)
             return resultado;
           } catch (error) {
             console.error("Erro ao buscar cotação SAP:", error);
@@ -797,6 +808,9 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           this.historic = document.querySelector(".modalHistorico") || document.createElement('div');
           this.fecharHistoric = document.querySelector(".fecharHistorico") || document.createElement('button');
           this.inputBuscar = document.querySelector(".input-buscar") || document.createElement('input');
+          this.planoCheckboxes = document.querySelectorAll('.checkbox-plano');
+          this.frases = {};
+          this.selectedPlano = null;
           // attach auto-resize listener for dadosFipe textarea
           // (call after DOMContentLoaded when Ui is instantiated)
           this.attachResizeListener();
@@ -836,58 +850,23 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
          }
 
           async calculaMensalidade() {
-            try {
-              // Primeiro tenta usar cache local
               try {
-                const cached = getBaseFromLocalStorage(this.estado);
-                if (cached) {
-                  const computed = computeMensalidadesFromCache(this.estado, this.valorFipe, this.inputField.value || null);
-
-                  // Popula UI com valores computados
-                  document.getElementById('colisaoEssencial').textContent = 'R$ 0,00';
-                  document.getElementById('primeiraMensalidadeEssencial').textContent = this.formatBRL(computed.essencial.primeira);
-                  document.getElementById('totalEssencial').textContent = this.formatBRL(computed.essencial.mensal);
-                  document.getElementById('totalAnualEssencial').textContent = this.formatBRL(computed.essencial.anual);
-
-                  document.getElementById('colisaoCompleto').textContent = this.formatBRL(computed.semVidro.mensal - computed.essencial.mensal);
-                  document.getElementById('primeiraMensalidadeCompleto').textContent = this.formatBRL(computed.completo.primeira);
-                  document.getElementById('totalCompleto').textContent = this.formatBRL(computed.completo.mensal);
-                  document.getElementById('totalAnualCompleto').textContent = this.formatBRL(computed.completo.anual);
-
-                  document.getElementById('fraseEssencial').value = "Seguro Essencial no Plano Anual é de " +
-                    this.formatBRL(computed.essencial.anual) + " em até 12x sem juros de " + this.formatBRL(computed.essencial.mensal) + " no cartão de crédito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.essencial.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.essencial.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
-
-                  document.getElementById('fraseVidro').value = "Seguro Completo com Colisão no Plano Anual é de " +
-                    this.formatBRL(computed.semVidro.anual) + " em até 12x sem juros de " + this.formatBRL(computed.semVidro.mensal) + " no cartão de crédito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.semVidro.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.semVidro.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
-
-                  document.getElementById('fraseCompleto').value = "Seguro Completo com Colisão e Opcional Vidros " +
-                    "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(computed.completo.anual) + " em até 12x sem juros de " +
-                    this.formatBRL(computed.completo.mensal) + " no cartão credito. " +
-                    "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(computed.completo.primeira) +
-                    " no cartão de crédito + mensais sem juros de " + this.formatBRL(computed.completo.mensal) +
-                    " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
-
-                  // Não é necessário consultar a API
-                  return;
-                }
-              } catch (cacheErr) {
-                console.warn('Erro ao usar cache para cálculo:', cacheErr);
-              }
-
-              // Se não houver cache, usar API e aplicar valores (comportamento anterior)
-              const resultado = await this.buscarCotacaoSAP(this.estado);
+                // Verificar se dados estão em cache, senão buscar da API e salvar
+                const resultado = await getBaseDataForEstado(this.estado);
               const planos = resultado.planos || resultado.data?.planos || resultado;
               const plano = Array.isArray(planos) ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + this.estado) : null;
               if (!plano) {
                 console.warn("Plano não encontrado");
                 return;
               }
+   
+              // Log plano data for debugging
+              console.log('Plano data from API:', {
+                idPlano: plano.idPlano,
+                itensPlano: plano.itensPlano?.length || 0,
+                estado: this.estado,
+                valorFipe: this.valorFipe
+              });
               const planService = new kl();
               let r = {
                 car: "CAT_AGRAVO_VEICULO_LEVE",
@@ -900,135 +879,222 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
               for (let i = 10; i <= 150; i += 10) {
                 mensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, r).toFixed(2)));
               }
+
               // Calculate indice based on ranges
               let indice = 0;
-              let looviFipe = 0;
               if (this.valorFipe > 0 && this.valorFipe <= 10000) {
                 indice = 0;
-                looviFipe = 10;
               } else if (this.valorFipe > 10000 && this.valorFipe <= 20000) {
                 indice = 1;
-                looviFipe = 20;
               } else if (this.valorFipe > 20000 && this.valorFipe <= 30000) {
                 indice = 2;
-                looviFipe = 30;
               } else if (this.valorFipe > 30000 && this.valorFipe <= 40000) {
                 indice = 3;
-                looviFipe = 40;
               } else if (this.valorFipe > 40000 && this.valorFipe <= 50000) {
                 indice = 4;
-                looviFipe = 50;
               } else if (this.valorFipe > 50000 && this.valorFipe <= 60000) {
                 indice = 5;
-                looviFipe = 60;
               } else if (this.valorFipe > 60000 && this.valorFipe <= 70000) {
                 indice = 6;
-                looviFipe = 70;
               } else if (this.valorFipe > 70000 && this.valorFipe <= 80000) {
                 indice = 7;
-                looviFipe = 80;
               } else if (this.valorFipe > 80000 && this.valorFipe <= 90000) {
                 indice = 8;
-                looviFipe = 90;
               } else if (this.valorFipe > 90000 && this.valorFipe <= 100000) {
                 indice = 9;
-                looviFipe = 100;
               } else if (this.valorFipe > 100000 && this.valorFipe <= 110000) {
                 indice = 10;
-                looviFipe = 110;
               } else if (this.valorFipe > 110000 && this.valorFipe <= 120000) {
                 indice = 11;
-                looviFipe = 120;
               } else if (this.valorFipe > 120000 && this.valorFipe <= 130000) {
                 indice = 12;
-                looviFipe = 130;
               } else if (this.valorFipe > 130000 && this.valorFipe <= 140000) {
                 indice = 13;
-                looviFipe = 140;
               } else if (this.valorFipe > 140000 && this.valorFipe <= 150000) {
                 indice = 14;
-                looviFipe = 150;
               } else if (this.valorFipe > 150000) {
                 indice = 14;
-                looviFipe = 150;
               }
-              const price = mensalidades[indice];
-              console.log("Mensalidades:", mensalidades);
-              console.log("Preço mensalidade:", price);
 
-              // Calculate for Essencial (no colisao, no vidros)
-              let rEssencial = {
-                car: "CAT_AGRAVO_VEICULO_LEVE",
-                colisao: false,
-                smart: false,
-                vidros: false
-              };
-              const valorMensalidadeEssencial = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rEssencial).toFixed(2));
+              // Calculate values using the exact logic from the provided code
+              const faixaFipe = "CAT_FIPE_" + (indice + 1) * 10 + "K"; // e.g., CAT_FIPE_30K for indice 2
 
-              // Calculate for Sem Vidro (with colisao, no vidros)
-              let rSemVidro = {
-                car: "CAT_AGRAVO_VEICULO_LEVE",
-                colisao: true,
-                smart: false,
-                vidros: false
-              };
-              const valorMensalidadeSemVidro = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rSemVidro).toFixed(2));
+              // Calculate colisao using calcularCotacaoFaixa logic
+              let SRV_SEG_COLISAO = 0;
+              const itemSegColisao = plano.itensPlano.find(i => i.codigoItem === "SRV_SEGUROS_LTI");
+              if (itemSegColisao && itemSegColisao.formularioSubItens) {
+                const subColisao = itemSegColisao.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_SEG_COLISAO");
+                if (subColisao && subColisao.formularioCategorias) {
+                  const cat = subColisao.formularioCategorias.categoriaSubItem.find(c => c.codigoItem === faixaFipe);
+                  if (cat) SRV_SEG_COLISAO = cat.preco;
+                }
+              }
 
-              // Calculate for Completo (with colisao, with vidros)
-              let rCompleto = {
-                car: "CAT_AGRAVO_VEICULO_LEVE",
-                colisao: true,
-                smart: false,
-                vidros: true
-              };
-              const valorMensalidadeCompleto = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rCompleto).toFixed(2));
+              let SRV_SEG_TERCEIROS = 0;
+              const itemTerceiros = plano.itensPlano.find(i => i.codigoItem === "SRV_SEGUROS_LTI");
+              if (itemTerceiros && itemTerceiros.formularioSubItens) {
+                const subTerceiros = itemTerceiros.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_SEG_TERCEIROS");
+                if (subTerceiros && subTerceiros.formularioCategorias) {
+                  const cat = subTerceiros.formularioCategorias.categoriaSubItem.find(c => c.itemPadrao);
+                  if (cat) SRV_SEG_TERCEIROS = cat.preco;
+                }
+              }
+
+              let SRV_SEG_TERCEIROS_CORP = 0;
+              if (itemTerceiros && itemTerceiros.formularioSubItens) {
+                const subTerceirosCorp = itemTerceiros.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_SEG_TERCEIROS_CORP");
+                if (subTerceirosCorp && subTerceirosCorp.formularioCategorias) {
+                  const cat = subTerceirosCorp.formularioCategorias.categoriaSubItem.find(c => c.itemPadrao);
+                  if (cat) SRV_SEG_TERCEIROS_CORP = cat.preco;
+                }
+              }
+
+              let CAT_SEG_APP = 0;
+              const itemApp = plano.itensPlano.find(i => i.codigoItem === "SRV_SEGUROS_LTI");
+              if (itemApp && itemApp.formularioSubItens) {
+                const subApp = itemApp.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_SEGURO_APP");
+                if (subApp && subApp.formularioCategorias) {
+                  const cat = subApp.formularioCategorias.categoriaSubItem.find(c => c.codigoItem === "CAT_SEG_APP");
+                  if (cat) CAT_SEG_APP = cat.preco;
+                }
+              }
+
+              let valorColisao = SRV_SEG_COLISAO + SRV_SEG_TERCEIROS + SRV_SEG_TERCEIROS_CORP + CAT_SEG_APP;
+
+              const itemServicoLoovi = plano.itensPlano.find(i => i.codigoItem === "SRV_SERVICO_LOOVI");
+              let c = 0;
+              if (itemServicoLoovi && itemServicoLoovi.formularioSubItens) {
+                const subComColisao = itemServicoLoovi.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_FIPE_COM_COLISAO");
+                if (subComColisao && subComColisao.formularioCategorias) {
+                  const cat = subComColisao.formularioCategorias.categoriaSubItem.find(c => c.codigoItem === faixaFipe);
+                  if (cat) c = cat.preco;
+                }
+              }
+
+              let u = 0;
+              if (itemServicoLoovi && itemServicoLoovi.formularioSubItens) {
+                const subSemColisao = itemServicoLoovi.formularioSubItens.subItemPlano.find(s => s.codigoItem === "SRV_FIPE_SEM_COLISAO");
+                if (subSemColisao && subSemColisao.formularioCategorias) {
+                  const cat = subSemColisao.formularioCategorias.categoriaSubItem.find(c => c.codigoItem === faixaFipe);
+                  if (cat) u = cat.preco;
+                }
+              }
+
+              if (c > u) {
+                valorColisao += (c - u);
+              } else {
+                valorColisao -= (u - c);
+              }
+
+              // Add SRV_SEGUROS_LTI preco for completo
+              const itemSegLti = plano.itensPlano.find(i => i.codigoItem === "SRV_SEGUROS_LTI");
+              if (itemSegLti) {
+                valorColisao += itemSegLti.preco;
+              }
+
+              // Get base mensalidade from essencial array
+              const essencialMensalidades = [];
+              for (let i = 10; i <= 150; i += 10) {
+                essencialMensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false }).toFixed(2)));
+              }
+              let valorMensalidade = essencialMensalidades[indice];
+
+              // Adjustments for vehicle type
+              const suvElement = document.getElementById('suv');
+              const utilElement = document.getElementById('util');
+              if (suvElement && suvElement.checked) {
+                valorMensalidade += 50;
+              }
+              if (utilElement && utilElement.checked) {
+                valorMensalidade += 50;
+              }
+
+              // Calculate final values
+              const valorMensalidadeEssencial = valorMensalidade;
+              const valorVidros = planService.getVidrosPrice(plano); // Get vidros price from API
+              const valorMensalidadeCompleto = valorMensalidade + valorColisao + valorVidros;
+
+              // No specific case adjustments - use API values as-is
+
+              console.log('Completo components:', {
+                total: valorMensalidadeCompleto
+              });
 
               // Constants
               const valorAtivacao = 299.90;
 
-              // Calculate totals
-              const totalAnualEssencial = valorMensalidadeEssencial * 12;
-              const primeiraMensalidadeEssencial = valorAtivacao + valorMensalidadeEssencial;
+              // Calculate totals according to correct logic - use planService values directly
+              const primeiraMensalidadeEssencial = valorMensalidadeEssencial + valorAtivacao;
+              const totalAnualEssencial = (valorMensalidadeEssencial * 12) + valorAtivacao;
               const totalEssencial = valorMensalidadeEssencial;
 
-              const totalAnualSemVidro = valorMensalidadeSemVidro * 12;
-              const primeiraMensalidadeSemVidro = valorAtivacao + valorMensalidadeSemVidro;
+              const valorMensalidadeSemVidro = valorMensalidadeEssencial + valorColisao;
+              const primeiraMensalidadeSemVidro = valorMensalidadeSemVidro + valorAtivacao;
+              const totalAnualSemVidro = (valorMensalidadeSemVidro * 12) + valorAtivacao;
               const totalSemVidro = valorMensalidadeSemVidro;
 
-              const totalAnualCompleto = valorMensalidadeCompleto * 12;
-              const primeiraMensalidadeCompleto = valorAtivacao + valorMensalidadeCompleto;
+              const primeiraMensalidadeCompleto = valorMensalidadeCompleto + valorAtivacao;
+              const totalAnualCompleto = (valorMensalidadeCompleto * 12) + valorAtivacao;
               const totalCompleto = valorMensalidadeCompleto;
 
-              // Set table values
-              document.getElementById('colisaoEssencial').textContent = 'R$ 0,00';
+              // Debug logging
+              console.log('essencial', valorMensalidadeEssencial);
+              console.log('semVidro', valorMensalidadeSemVidro);
+              console.log('completo', valorMensalidadeCompleto);
+
+              // Set table values - match official site format
+              document.getElementById('colisaoEssencial').textContent = '0';
               document.getElementById('primeiraMensalidadeEssencial').textContent = this.formatBRL(primeiraMensalidadeEssencial);
               document.getElementById('totalEssencial').textContent = this.formatBRL(totalEssencial);
               document.getElementById('totalAnualEssencial').textContent = this.formatBRL(totalAnualEssencial);
 
-              document.getElementById('colisaoCompleto').textContent = this.formatBRL(valorMensalidadeSemVidro - valorMensalidadeEssencial);
+
+              // Completo: Roubo, furto, colisão e vidros
+              const colisaoCompleto = valorColisao;
+              document.getElementById('colisaoCompleto').textContent = this.formatBRL(colisaoCompleto);
               document.getElementById('primeiraMensalidadeCompleto').textContent = this.formatBRL(primeiraMensalidadeCompleto);
               document.getElementById('totalCompleto').textContent = this.formatBRL(totalCompleto);
               document.getElementById('totalAnualCompleto').textContent = this.formatBRL(totalAnualCompleto);
 
-              // Set frases
-              document.getElementById('fraseEssencial').value = "Seguro Essencial no Plano Anual é de " +
-                this.formatBRL(totalAnualEssencial) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeEssencial) + " no cartão de crédito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeEssencial) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalEssencial) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+              // Debug final values
+              console.log('Final table values:', {
+                essencial: {
+                  primeira: primeiraMensalidadeEssencial,
+                  mensal: totalEssencial,
+                  anual: totalAnualEssencial
+                },
+                completo: {
+                  colisao: colisaoCompleto,
+                  primeira: primeiraMensalidadeCompleto,
+                  mensal: totalCompleto,
+                  anual: totalAnualCompleto
+                }
+              });
 
-              document.getElementById('fraseVidro').value = "Seguro Completo com Colisão no Plano Anual é de " +
-                this.formatBRL(totalAnualSemVidro) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeSemVidro) + " no cartão de crédito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeSemVidro) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalSemVidro) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+              // Store phrases in object for unified textarea
+              this.frases = {
+                essencial: "Seguro Essencial no Plano Anual é de " +
+                  this.formatBRL(totalAnualEssencial) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeEssencial) + " no cartão de crédito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeEssencial) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalEssencial) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
 
-              document.getElementById('fraseCompleto').value = "Seguro Completo com Colisão e Opcional Vidros " +
-                "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(totalAnualCompleto) + " em até 12x sem juros de " +
-                this.formatBRL(valorMensalidadeCompleto) + " no cartão credito. " +
-                "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeCompleto) +
-                " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalCompleto) +
-                " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.";
+                semVidro: "Seguro Completo sem Vidros no Plano Anual é de " +
+                  this.formatBRL(totalAnualSemVidro) + " em até 12x sem juros de " + this.formatBRL(valorMensalidadeSemVidro) + " no cartão de crédito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeSemVidro) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalSemVidro) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.",
+
+                completo: "Seguro Completo com Colisão e Opcional Vidros " +
+                  "(faróis, lanternas e retrovisores) no Plano Anual é de " + this.formatBRL(totalAnualCompleto) + " em até 12x sem juros de " +
+                  this.formatBRL(valorMensalidadeCompleto) + " no cartão de crédito. " +
+                  "Já no Plano Recorrente Mensal o Valor da entrada é de " + this.formatBRL(primeiraMensalidadeCompleto) +
+                  " no cartão de crédito + mensais sem juros de " + this.formatBRL(totalCompleto) +
+                  " debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão."
+              };
+
+              // Update unified textarea based on selected checkbox
+              this.updateFraseUnificada();
             } catch (error) {
               console.error("Erro ao calcular mensalidade:", error);
             }
@@ -1446,30 +1512,229 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           textarea.select();
         });
 
-        document.getElementById('btnCopiarFraseEssencial').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseEssencial');
-          textarea.focus();
-          textarea.select();
-        });
-
-        document.getElementById('btnCopiarFraseVidro').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseVidro');
-          textarea.focus();
-          textarea.select();
-        });
-
-        document.getElementById('btnCopiarFraseCompleto').addEventListener('click', () => {
-          const textarea = document.getElementById('fraseCompleto');
+        document.getElementById('btnCopiarFrase').addEventListener('click', () => {
+          const textarea = document.getElementById('fraseUnificada');
           textarea.focus();
           textarea.select();
         });
       }
+
+      updateFraseUnificada() {
+        const textarea = document.getElementById('fraseUnificada');
+        if (this.selectedPlano && this.frases[this.selectedPlano]) {
+          textarea.value = this.frases[this.selectedPlano];
+        } else {
+          textarea.value = '';
+        }
+        this.autoResizeTextarea(textarea);
+      }
+
+      planoCheckboxData() {
+        this.planoCheckboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', () => {
+            this.planoCheckboxes.forEach(box => {
+              if (box !== checkbox) box.checked = false;
+            });
+
+            if (checkbox.checked) {
+              this.selectedPlano = checkbox.dataset.plano;
+            } else {
+              this.selectedPlano = null;
+            }
+            this.updateFraseUnificada();
+          });
+        });
+      }
     }
 
+    function listPlanValues() {
+      const base = readBaseValues();
+      console.log('Valores dos Planos:');
+      Object.keys(base).forEach(estado => {
+        const data = base[estado];
+        const planos = data.planos || data.data?.planos || data;
+        if (Array.isArray(planos)) {
+          planos.forEach(plano => {
+            console.log(`Estado: ${estado}, Plano: ${plano.idPlano}`);
+            if (plano.itensPlano) {
+              plano.itensPlano.forEach(item => {
+                console.log(`  Item: ${item.codigoItem}, Preço: ${item.preco}`);
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    // Função para testar cálculos de mensalidades com valor FIPE de exemplo
+    function testCalculations() {
+      const testFipe = 50000; // Exemplo de valor FIPE
+      console.log(`Testando cálculos para FIPE: R$ ${testFipe}`);
+      const results = computeMensalidadesForAllStates(testFipe);
+      Object.keys(results).forEach(estado => {
+        const res = results[estado];
+        if (res.error) {
+          console.log(`Erro em ${estado}: ${res.error}`);
+        } else {
+          console.log(`Estado: ${estado}`);
+          console.log(`  Essencial: Mensal R$ ${res.essencial.mensal}, Primeira R$ ${res.essencial.primeira}, Anual R$ ${res.essencial.anual}`);
+          console.log(`  Sem Vidro: Mensal R$ ${res.semVidro.mensal}, Primeira R$ ${res.semVidro.primeira}, Anual R$ ${res.semVidro.anual}`);
+          console.log(`  Completo: Mensal R$ ${res.completo.mensal}, Primeira R$ ${res.completo.primeira}, Anual R$ ${res.completo.anual}`);
+        }
+      });
+    }
+    
+    // Função para debug: força reload dos dados base e compara cálculos
+    async function debugCalculations() {
+      console.log('Forçando reload dos dados base...');
+      const freshData = await loadAllBaseValues();
+      console.log('Dados base recarregados.');
+
+      const testFipe = 29239; // Changed to match your actual test case (Kombi FIPE)
+      console.log(`Comparando cálculos para FIPE: R$ ${testFipe} com dados frescos:`);
+
+      const estados = ['MG', 'SP', 'RJ', 'SC', 'RS'];
+      for (const estado of estados) {
+        console.log(`\nEstado: ${estado}`);
+        const data = freshData[estado];
+        if (!data) {
+          console.log('  Dados não encontrados.');
+          continue;
+        }
+        const planos = data.planos || data.data?.planos || data;
+        const plano = Array.isArray(planos) ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + estado) : null;
+        if (!plano) {
+          console.log('  Plano não encontrado.');
+          continue;
+        }
+
+        const planService = new kl();
+        const { indice, looviFipe } = getIndiceAndLooviFipe(testFipe);
+        console.log(`  FIPE: ${testFipe}, Índice: ${indice}, Loovi FIPE: ${looviFipe}`);
+
+        // Essencial
+        const rEssencial = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false };
+        const mensalEssencial = planService.getCalcPlanPrice(plano, looviFipe, rEssencial);
+        console.log(`  Essencial: R$ ${mensalEssencial.toFixed(2)}`);
+
+        // Sem Vidro
+        const rSemVidro = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: false };
+        const mensalSemVidro = planService.getCalcPlanPrice(plano, looviFipe, rSemVidro);
+        console.log(`  Sem Vidro: R$ ${mensalSemVidro.toFixed(2)}`);
+
+        // Completo
+        const rCompleto = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: true };
+        const mensalCompleto = planService.getCalcPlanPrice(plano, looviFipe, rCompleto);
+        console.log(`  Completo: R$ ${mensalCompleto.toFixed(2)}`);
+
+        // Debug individual components for MG
+        if (estado === 'MG') {
+          console.log(`  Expected MG Essencial: R$ 103.90`);
+          console.log(`  Expected MG Completo: R$ 207.90`);
+          console.log(`  Current MG Essencial: R$ ${mensalEssencial.toFixed(2)}`);
+          console.log(`  Current MG Completo: R$ ${mensalCompleto.toFixed(2)}`);
+          console.log(`  Difference Essencial: ${Math.abs(parseFloat(mensalEssencial.toFixed(2)) - 103.90).toFixed(2)}`);
+          console.log(`  Difference Completo: ${Math.abs(parseFloat(mensalCompleto.toFixed(2)) - 207.90).toFixed(2)}`);
+
+          // Break down components
+          console.log(`  --- Component breakdown for MG ---`);
+          console.log(`  Roubo/Furto: R$ ${planService.getRouboFurtoPrice(plano, looviFipe)}`);
+          console.log(`  PT Roubo/Furto: R$ ${planService.getPtRouboFurtoPrice(plano, looviFipe)}`);
+          console.log(`  Agravo: R$ ${planService.getAgravoPrice(plano, rEssencial.car)}`);
+          console.log(`  Servico Loovi (Essencial): R$ ${planService.getServicoLooviPrice(plano, looviFipe, false)}`);
+          console.log(`  Servico Loovi (Completo): R$ ${planService.getServicoLooviPrice(plano, looviFipe, true)}`);
+          console.log(`  Seg Colisao: R$ ${planService.getSegColisaoPrice(plano, looviFipe)}`);
+          console.log(`  Seg Terceiros: R$ ${planService.getSegTerceirosPrice(plano)}`);
+          console.log(`  Vidros: R$ ${planService.getVidrosPrice(plano)}`);
+
+          // Calculate expected vs actual
+          const expectedCompleto = 207.90;
+          const actualCompleto = parseFloat(mensalCompleto.toFixed(2));
+          const difference = expectedCompleto - actualCompleto;
+
+          console.log(`  --- Analysis ---`);
+          console.log(`  Expected Completo: R$ ${expectedCompleto}`);
+          console.log(`  Actual Completo: R$ ${actualCompleto}`);
+          console.log(`  Missing amount: R$ ${difference.toFixed(2)}`);
+
+          // Check if vidros price matches the difference
+          const vidrosPrice = planService.getVidrosPrice(plano);
+          console.log(`  Vidros price: R$ ${vidrosPrice}`);
+          console.log(`  Is vidros the issue? ${Math.abs(vidrosPrice - Math.abs(difference)) < 0.01 ? 'YES' : 'NO'}`);
+
+          // Check individual calculations
+          const basePrice = planService.getRouboFurtoPrice(plano, looviFipe) +
+                           planService.getPtRouboFurtoPrice(plano, looviFipe) +
+                           planService.getAgravoPrice(plano, rEssencial.car) +
+                           planService.getServicoLooviPrice(plano, looviFipe, true); // with collision
+
+          const collisionPrice = planService.getSegColisaoPrice(plano, looviFipe) +
+                                planService.getSegTerceirosPrice(plano) +
+                                planService.getSegLtiPrice(plano);
+
+          const glassPrice = planService.getVidrosPrice(plano);
+
+          console.log(`  Base price (RF + PT + Agravo + Loovi): R$ ${basePrice.toFixed(2)}`);
+          console.log(`  Collision price (SegColisao + SegTerceiros + LTI): R$ ${collisionPrice.toFixed(2)}`);
+          console.log(`  Glass price: R$ ${glassPrice.toFixed(2)}`);
+          console.log(`  Manual calculation: R$ ${(basePrice + collisionPrice + glassPrice).toFixed(2)}`);
+          console.log(`  getCalcPlanPrice result: R$ ${mensalCompleto.toFixed(2)}`);
+
+          // Check if there's a missing component
+          const manualTotal = basePrice + collisionPrice + glassPrice;
+          const apiTotal = parseFloat(mensalCompleto.toFixed(2));
+          const missing = 207.90 - apiTotal;
+
+          console.log(`  Expected total: R$ 207.90`);
+          console.log(`  API total: R$ ${apiTotal}`);
+          console.log(`  Missing amount: R$ ${missing.toFixed(2)}`);
+
+          // Check if smart car is being added
+          try {
+            const smartPrice = planService.getSmartPrice(plano);
+            console.log(`  Smart car price: R$ ${smartPrice}`);
+            if (smartPrice > 0) {
+              console.log(`  With smart car: R$ ${(apiTotal + smartPrice).toFixed(2)}`);
+            }
+          } catch (e) {
+            console.log(`  Smart car error: ${e.message}`);
+          }
+
+          console.log(`  --- End breakdown ---`);
+        }
+
+        // Comparar com cache
+        try {
+          const cached = computeMensalidadesFromCache(estado, testFipe);
+          console.log(`  Cache Essencial: R$ ${cached.essencial.mensal}`);
+          console.log(`  Cache Sem Vidro: R$ ${cached.semVidro.mensal}`);
+          console.log(`  Cache Completo: R$ ${cached.completo.mensal}`);
+          if (cached.essencial.mensal !== mensalEssencial.toFixed(2)) {
+            console.log(`  *** DIFERENÇA EM ESSENCIAL: Fresco ${mensalEssencial.toFixed(2)} vs Cache ${cached.essencial.mensal}`);
+          }
+        } catch (e) {
+          console.log(`  Erro no cache: ${e.message}`);
+        }
+      }
+    }
+    
+
+    
     document.addEventListener('DOMContentLoaded', async () => {
       // Carrega valores base na primeira vez
       await loadBaseValues();
-
+    
+      // Lista os valores dos planos no console
+      listPlanValues();
+    
+      // Testa cálculos de mensalidades
+      testCalculations();
+    
+      // Debug: força reload e compara
+      await debugCalculations();
+    
+      
+    
     const ui = new Ui();
     // expose for external/debug use (so gerarPDF/verificarPlaca can call methods)
     window.ui = ui;
@@ -1477,14 +1742,15 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       ui.attachInputListener();
       ui.checkboxData();
       ui.sellerCheckboxData();
+      ui.planoCheckboxData();
       ui.modalHistoric();
-
+    
       // Carrega estado salvo ou padrão SP
     const savedEstado = localStorage.getItem('selectedEstado') || 'SP';
       ui.estado = savedEstado;
       ui.categoriaFipe = "CAT_FIPE_100K";
       document.getElementById(savedEstado.toLowerCase()).checked = true;
-
+    
     // Attach PDF buttons to gerarPDF if present
     document.getElementById('btnGerarPDFEssencial')?.addEventListener('click', () => gerarPDF('PDF-Essencial'));
     document.getElementById('btnGerarPDFSemVidros')?.addEventListener('click', () => gerarPDF('PDF-SemVidros'));
@@ -1500,10 +1766,8 @@ async function gerarPDF(nomeArquivo) {
     // chama verificarVendedor para popular vendedor no objeto ui
     if (window.ui && typeof window.ui.verificarVendedor === 'function') window.ui.verificarVendedor();
 
-    // coleta frases
-    const fraseEssencial = document.getElementById('fraseEssencial')?.value || '';
-    const fraseVidro = document.getElementById('fraseVidro')?.value || '';
-    const fraseCompleto = document.getElementById('fraseCompleto')?.value || '';
+    // coleta frase unificada
+    const fraseUnificada = document.getElementById('fraseUnificada')?.value || '';
 
     // coleta valores da tabela (se existirem)
     const totalEssencial = document.getElementById('totalEssencial')?.textContent || '';
@@ -1516,7 +1780,7 @@ async function gerarPDF(nomeArquivo) {
     if (window.ui && window.ui.vendedor) vendedor = window.ui.vendedor;
 
     // Monta HTML simples para o PDF
-    const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${nomeArquivo}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#222}header{background:#0a3d91;color:#fff;padding:12px;text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><header><h2>Loovi Seguros</h2></header><main style="padding:16px"><h3>${nomeArquivo}</h3><p><strong>Placa / Valor FIPE:</strong> ${placaOrValue}</p><h4>Frase</h4><p>${nomeArquivo.includes('Essencial')?fraseEssencial:(nomeArquivo.includes('SemVidros')?fraseVidro:fraseCompleto)}</p><h4>Valores</h4><table><tr><th>Item</th><th>Valor</th></tr><tr><td>Primeira Mensalidade</td><td>${nomeArquivo.includes('Essencial')?primeiraEssencial:primeiraCompleto}</td></tr><tr><td>Total Mensal</td><td>${nomeArquivo.includes('Completo')?totalCompleto:totalEssencial}</td></tr></table>${vendedor?`<h4>Vendedor</h4><p>${vendedor.nome} — ${vendedor.telFormatado ?? vendedor.tel}</p>`:''}</main></body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${nomeArquivo}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#222}header{background:#0a3d91;color:#fff;padding:12px;text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><header><h2>Loovi Seguros</h2></header><main style="padding:16px"><h3>${nomeArquivo}</h3><p><strong>Placa / Valor FIPE:</strong> ${placaOrValue}</p><h4>Frase</h4><p>${fraseUnificada}</p><h4>Valores</h4><table><tr><th>Item</th><th>Valor</th></tr><tr><td>Primeira Mensalidade</td><td>${nomeArquivo.includes('Essencial')?primeiraEssencial:primeiraCompleto}</td></tr><tr><td>Total Mensal</td><td>${nomeArquivo.includes('Completo')?totalCompleto:totalEssencial}</td></tr></table>${vendedor?`<h4>Vendedor</h4><p>${vendedor.nome} — ${vendedor.telFormatado ?? vendedor.tel}</p>`:''}</main></body></html>`;
 
     const postData = {
       fileName: nomeArquivo + '.pdf',
@@ -1585,5 +1849,7 @@ function verificarPlaca() {
     if (placa.length == 7 && typeof buscaPlaca === 'function') buscaPlaca(placa);
   }
 }
+
+
 
 
