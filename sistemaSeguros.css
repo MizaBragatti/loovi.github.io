@@ -1,4 +1,4 @@
-/* =========================
+ic/* =========================
    VARIÁVEIS E RESET
    ========================= */
 * {
@@ -50,7 +50,7 @@ body {
    ========================= */
 .main {
   width: 100%;
-  max-width: 920px;
+  max-width: 960px;
   background: #fff;
   border-radius: var(--radius-md);
   padding: 1rem;
@@ -120,10 +120,21 @@ body {
   gap: 0.6rem;
   margin-top: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 .form-group-check-box label {
   font-size: var(--fs-label);
   margin: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+@media (max-width: 768px) {
+  .form-group-check-box label {
+    font-size: clamp(12px, 3vw, 16px);
+    margin: 0 0.25rem;
+  }
 }
 
 .form-group-frase {
@@ -146,13 +157,20 @@ textarea {
 
 .input-placa {
   padding: 0.5rem;
-  width: 20vw;
+  width: clamp(200px, 40vw, 400px);
   max-width: 100%;
   margin: 0.5rem 0;
   border: 1px solid #ccc;
   border-radius: var(--radius-sm);
   transition: border-color 0.3s, box-shadow 0.3s;
   font-size: var(--fs-input);
+}
+
+@media (max-width: 768px) {
+  .input-placa {
+    width: clamp(150px, 80vw, 350px);
+    font-size: clamp(14px, 4vw, 16px);
+  }
 }
 .input-placa:focus {
   outline: none;
@@ -179,9 +197,7 @@ textarea {
   box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
 }
 
-#fraseEssencial,
-#fraseVidro,
-#fraseCompleto {
+#fraseUnificada {
   width: 100%;
   max-width: 100%;
   padding: 0.5rem;
@@ -189,16 +205,60 @@ textarea {
   border-radius: var(--radius-sm);
   resize: none;
   font-size: var(--fs-input);
-  margin-top: 2rem;
+  margin-top: 1rem;
   max-height: 40vh;
   overflow: auto;
+  min-height: 60px;
 }
-#fraseEssencial:focus,
-#fraseVidro:focus,
-#fraseCompleto:focus {
+
+@media (max-width: 768px) {
+  #fraseUnificada {
+    font-size: clamp(14px, 4vw, 16px);
+    min-height: 50px;
+    max-height: 20vh;
+  }
+}
+#fraseUnificada:focus {
   outline: none;
   border-color: var(--color-main);
   box-shadow: 0 0 0 2px rgba(10, 61, 145, 0.12);
+}
+
+.frase-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .btn-frase {
+    font-size: clamp(12px, 3vw, 16px);
+    padding: 0.5rem 0.75rem;
+    min-width: 80px;
+  }
+}
+
+.btn-frase {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-button);
+  padding: 0.5rem 1rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-frase:hover {
+  background: #e0e0e0;
+}
+
+.btn-frase.active {
+  background: var(--color-main);
+  color: #fff;
+  border-color: var(--color-main);
 }
 
 /* =========================
@@ -415,10 +475,10 @@ h3 {
   border-radius: 1rem;
   margin-top: 2rem;
 }
+
 #tabelaValores {
   border-collapse: collapse;
   display: table;
-  background: #f5f7fa;
 }
 #tabela-header {
   background: var(--color-main);
@@ -445,6 +505,7 @@ tbody {
   display: table-row-group;
 }
 
+
 /* =========================
    RESPONSIVO PARA HISTÓRICO
    ========================= */
@@ -463,6 +524,29 @@ tbody {
   #listaCotacoes {
     max-width: none;
     width: 100%;
+  }
+
+  /* Ajuste dinâmico da fonte da tabela baseado na tela do cliente */
+  #tabelaValores {
+    font-size: clamp(8px, 2vw, 16px);
+  }
+  #tabelaValores th {
+    font-size: clamp(9px, 2.2vw, 17px);
+  }
+  #tabelaValores td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    padding: 0.5rem 0.3rem;
+    white-space: normal;
+  }
+  #tabelaValores td:not(:first-child) {
+    font-size: clamp(10px, 2.5vw, 16px);
+  }
+  #tabelaValores td:first-child {
+    font-size: clamp(9px, 2vw, 16px);
+    font-weight: bold;
+    color: var(--color-main);
   }
 }
 

@@ -1048,7 +1048,6 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
               document.getElementById('totalEssencial').textContent = this.formatBRL(totalEssencial);
               document.getElementById('totalAnualEssencial').textContent = this.formatBRL(totalAnualEssencial);
 
-
               // Completo: Roubo, furto, colisão e vidros
               const colisaoCompleto = valorColisao;
               document.getElementById('colisaoCompleto').textContent = this.formatBRL(colisaoCompleto);
@@ -1519,6 +1518,23 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         });
       }
 
+      attachFraseButtons() {
+        document.getElementById('btnFraseEssencial').addEventListener('click', () => {
+          this.selectedPlano = 'essencial';
+          this.updateFraseUnificada();
+        });
+
+        document.getElementById('btnFraseSemVidro').addEventListener('click', () => {
+          this.selectedPlano = 'semVidro';
+          this.updateFraseUnificada();
+        });
+
+        document.getElementById('btnFraseCompleto').addEventListener('click', () => {
+          this.selectedPlano = 'completo';
+          this.updateFraseUnificada();
+        });
+      }
+
       updateFraseUnificada() {
         const textarea = document.getElementById('fraseUnificada');
         if (this.selectedPlano && this.frases[this.selectedPlano]) {
@@ -1527,6 +1543,13 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           textarea.value = '';
         }
         this.autoResizeTextarea(textarea);
+
+        // Update button styles to show selected
+        document.querySelectorAll('.btn-frase').forEach(btn => btn.classList.remove('active'));
+        if (this.selectedPlano) {
+          const btnId = `btnFrase${this.selectedPlano.charAt(0).toUpperCase() + this.selectedPlano.slice(1)}`;
+          document.getElementById(btnId)?.classList.add('active');
+        }
       }
 
       planoCheckboxData() {
@@ -1743,6 +1766,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       ui.checkboxData();
       ui.sellerCheckboxData();
       ui.planoCheckboxData();
+      ui.attachFraseButtons();
       ui.modalHistoric();
     
       // Carrega estado salvo ou padrão SP
