@@ -74,7 +74,7 @@ let kl = (() => {
         }
         getState() {
             let e = sessionStorage.getItem("looviState");
-            return null === e ? e = "SP" : e || (e = this.selectedState),
+            return null === e ? e = null : e || (e = this.selectedState),
                 e
         }
         getPlanId(e) {
@@ -231,15 +231,15 @@ function buscarCotacaoSAP() {
                 let planService = new kl();
                 planService.setStatePlans(resultado);
                 planService.setPlan()
-                //console.log("Cotação SAP:", resultado);
+                //
                 // Exemplo: mostrar resultado em um textarea
                 // document.getElementById('dadosFipe').value = JSON.stringify(resultado, null, 2);
             } else {
-                console.warn("Resposta inesperada:", data);
+                
             }
         })
         .catch(error => {
-            console.error("Erro ao buscar cotação SAP:", error);
+            
         });
 }
 
@@ -251,7 +251,7 @@ function copiarClipboard(opcao) {
             saida = document.getElementById('copia1')
             break;
         default:
-            console.log('Opção inválida');
+            
     }
 
     input.select();
@@ -454,10 +454,12 @@ function calculaMensalidade() {
 
     if (document.getElementById('suv').checked) {
         valorMensalidade = valorMensalidade + valoresOutrosEstados[2];
+        
     }
 
     if (document.getElementById('util').checked) {
-        valorMensalidade = valorMensalidade + valoresOutrosEstados[2];
+        valorMensalidade = valorMensalidade + valoresOutrosEstados[3];
+        
     }
 
     if (document.getElementById('sul').checked) {
@@ -465,11 +467,15 @@ function calculaMensalidade() {
         valorColisao = valoresSul[1][indice];
         valorVidros = valoresSul[4];
 
-        if (document.getElementById('suv').checked)
+        if (document.getElementById('suv').checked) {
             valorMensalidade = valorMensalidade + valoresSul[2];
+            
+        }
 
-        if (document.getElementById('util').checked)
+        if (document.getElementById('util').checked) {
             valorMensalidade = valorMensalidade + valoresSul[3];
+            
+        }
     }
 
     if (document.getElementById('mg').checked) {
@@ -477,8 +483,12 @@ function calculaMensalidade() {
         valorColisao = valoresMG[1][indice];
         valorVidros = valoresMG[4];
 
-        if (document.getElementById('suv').checked)
+        if (document.getElementById('suv').checked) {
             valorMensalidade = valorMensalidade + valoresMG[2];
+            
+            
+            
+        }
 
         if (document.getElementById('util').checked)
             valorMensalidade = valorMensalidade + valoresMG[3];
@@ -489,11 +499,15 @@ function calculaMensalidade() {
         valorColisao = valoresRJ[1][indice];
         valorVidros = valoresRJ[4];
 
-        if (document.getElementById('suv').checked)
+        if (document.getElementById('suv').checked) {
             valorMensalidade = valorMensalidade + valoresRJ[2];
+            
+        }
 
-        if (document.getElementById('util').checked)
+        if (document.getElementById('util').checked) {
             valorMensalidade = valorMensalidade + valoresRJ[3];
+            
+        }
     }
 
     tipoSeguro = tipoSeguro + ' + vidros';
@@ -618,8 +632,6 @@ function buscaValor() {
 
 function buscaPlaca() {
     let placa = document.getElementById('placa').value;
-
-    //console.log("Placa: " + placa)
 
     const myInit = {
         method: 'GET'
@@ -764,3 +776,4 @@ function salvarDados() {
     salvarHistorico(dadosHistorico);
     alert('Dados salvos no histórico!');
 }
+
