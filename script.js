@@ -12,18 +12,18 @@ async function loadBaseValues() {
         // Garante que o dado salvo é um objeto válido e contém planos
         if (data && (Array.isArray(data.planos) || Array.isArray(data.data?.planos) || Array.isArray(data))) {
           baseValues[estado] = data;
-          console.log(`Loaded base values for ${estado}`);
+          
         } else {
-          console.warn(`Dados de planos inválidos para o estado ${estado}:`, data);
+          
         }
       } catch (error) {
-        console.error(`Error loading for ${estado}:`, error);
+        
       }
     }
   }
 
   localStorage.setItem(key, JSON.stringify(baseValues));
-  console.log('Base values loaded and cached');
+  
 }
 
 async function getBaseDataForEstado(estado) {
@@ -31,15 +31,15 @@ async function getBaseDataForEstado(estado) {
   let baseValues = JSON.parse(localStorage.getItem(key)) || {};
 
   if (!baseValues[estado]) {
-    console.log(`Fetching data for ${estado}`);
+    
     const calculadora = new Calcular();
     try {
       const data = await calculadora.buscarCotacaoSAP(estado);
       baseValues[estado] = data;
       localStorage.setItem(key, JSON.stringify(baseValues));
-      console.log(`Saved data for ${estado}`);
+      
     } catch (error) {
-      console.error(`Error fetching for ${estado}:`, error);
+      
       return null;
     }
   }
@@ -190,7 +190,7 @@ function writeBaseMeta(meta) {
   try {
     localStorage.setItem(BASE_META_KEY, JSON.stringify(meta));
   } catch (e) {
-    console.error('Erro ao salvar meta baseValues:', e);
+    
   }
 }
 
@@ -218,7 +218,7 @@ async function loadAllBaseValues(estados = DEFAULT_ESTADOS) {
       if (value && value.estado && value.data) baseValues[value.estado] = value.data;
     } else if (r.status === 'rejected') {
       // should not happen due to inner try/catch, but keep safe
-      console.warn('Erro ao carregar estado:', r.reason);
+      
     }
   });
 
@@ -228,10 +228,9 @@ async function loadAllBaseValues(estados = DEFAULT_ESTADOS) {
     const merged = Object.assign({}, existing, baseValues);
     localStorage.setItem('baseValues', JSON.stringify(merged));
     writeBaseMeta({ updatedAt: Date.now() });
-    console.log('Base values carregados (paralelo):', Object.keys(baseValues));
     return merged;
   } catch (e) {
-    console.error('Erro ao salvar baseValues:', e);
+    
     return null;
   }
 }
@@ -241,7 +240,7 @@ async function getOrLoadAllBaseValues(estados = DEFAULT_ESTADOS) {
   const cached = readBaseValues();
   // Se baseValues está corrompido => refazer a requisição
   if (cached === null) {
-    console.warn('baseValues corrompido — forçando reload');
+    
     return await loadAllBaseValues(estados);
   }
 
@@ -493,14 +492,14 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
     const totalAnualCompleto = (valorMensalidadeCompleto * 12) + valorAtivacao;
  
     // Debug logging
-    console.log('computeMensalidadesFromCache - essencial:', valorMensalidadeEssencial);
-    console.log('computeMensalidadesFromCache - semVidro:', valorMensalidadeSemVidro);
-    console.log('computeMensalidadesFromCache - completo:', valorMensalidadeCompleto);
+    
+    
+    
 
     // Debug logging
-    console.log('calculateMensalidades - essencial:', valorMensalidadeEssencial);
-    console.log('calculateMensalidades - semVidro:', valorMensalidadeSemVidro);
-    console.log('calculateMensalidades - completo:', valorMensalidadeCompleto);
+    
+    
+    
   
     return {
       essencial: {
@@ -683,10 +682,9 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
           const data = await response.json();
           let jsonStr = typeof data === "string" ? atob(data) : "";
             let resultado = jsonStr ? JSON.parse(jsonStr) : data;
-            console.log(resultado)
             return resultado;
           } catch (error) {
-            console.error("Erro ao buscar cotação SAP:", error);
+            
           }
         }
     
@@ -726,10 +724,8 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
            for (let i = 10; i <= 150; i += 10) {
              mensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, r).toFixed(2)));
            }
-
-           console.log(estado + " mensalidades (" + categoriaAgravo + "):", mensalidades);
          } else {
-           console.warn("Plano não encontrado!");
+           
          }
        };
 
@@ -898,7 +894,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               try {
                 // Verificar se estado está definido
                 if (!this.estado || this.estado === 'undefined') {
-                  console.warn("Nenhum estado selecionado. Selecione um estado primeiro.");
+                  
                   // Mostrar erro visual no input se não há estado selecionado
                   this.inputField.classList.add('error');
                   setTimeout(() => this.inputField.classList.remove('error'), 3000);
@@ -908,7 +904,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
                 // Verificar se dados estão em cache, senão buscar da API e salvar
                 const resultado = await getBaseDataForEstado(this.estado);
                 if (!resultado) {
-                  console.warn("Dados base não encontrados para estado:", this.estado);
+                  
                   return;
                 }
  
@@ -918,7 +914,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
                   planos = Object.values(planos);
                 }
                 if (!Array.isArray(planos)) {
-                  console.warn("Dados de planos inválidos", planos);
+                  
                   return;
                 }
  
@@ -944,19 +940,11 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
                 }
  
                 if (!plano) {
-                  console.warn("Plano não encontrado para estado:", this.estado);
-                  console.log("Planos disponíveis na API:", planos.map(p => p.idPlano));
-                  console.log("Dados completos do estado:", resultado);
                   return;
                 }
    
               // Log plano data for debugging
-              console.log('Plano data from API:', {
-                idPlano: plano.idPlano,
-                itensPlano: plano.itensPlano?.length || 0,
-                estado: this.estado,
-                valorFipe: this.valorFipe
-              });
+              
               const planService = new kl();
 
               // Determinar categoria de agravo baseada no tipo de veículo
@@ -988,7 +976,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
               // Debug: verificar se smart está sendo ativado para SUVs
               if (isSUVUI) {
-                console.log('Smart ativado para SUV/Utilitário, categoria:', categoriaAgravoUI);
+                
               }
               // Calculate mensalidades array
               let mensalidades = [];
@@ -1035,7 +1023,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
               // Calculate values using the exact logic from the provided code
               const faixaFipe = "CAT_FIPE_" + (indice + 1) * 10 + "K"; // e.g., CAT_FIPE_30K for indice 2
-              console.log('Calculando com categoria:', categoriaAgravoUI, 'para estado:', this.estado);
+              
 
               // Calculate colisao using calcularCotacaoFaixa logic
               let SRV_SEG_COLISAO = 0;
@@ -1122,7 +1110,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               const usarDadosHardcoded = valorBaseAPI <= 0 || isNaN(valorBaseAPI);
 
               if (usarDadosHardcoded) {
-                console.warn('API retornou valores inválidos, usando dados hardcoded como fallback');
+                
                 // Usar lógica do código antigo como fallback
                 valorMensalidade = this.calcularComDadosHardcoded(indice, categoriaAgravoUI);
               } else {
@@ -1146,9 +1134,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
               // No specific case adjustments - use API values as-is
 
-              console.log('Completo components:', {
-                total: valorMensalidadeCompleto
-              });
+              
 
               // Constants
               const valorAtivacao = 299.90;
@@ -1168,9 +1154,9 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               const totalCompleto = valorMensalidadeCompleto;
 
               // Debug logging
-              console.log('essencial', valorMensalidadeEssencial);
-              console.log('semVidro', valorMensalidadeSemVidro);
-              console.log('completo', valorMensalidadeCompleto);
+              
+              
+              
 
               // Set table values - match official site format
               document.getElementById('colisaoEssencial').textContent = '0';
@@ -1186,19 +1172,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               document.getElementById('totalAnualCompleto').textContent = this.formatBRL(totalAnualCompleto);
 
               // Debug final values
-              console.log('Final table values:', {
-                essencial: {
-                  primeira: primeiraMensalidadeEssencial,
-                  mensal: totalEssencial,
-                  anual: totalAnualEssencial
-                },
-                completo: {
-                  colisao: colisaoCompleto,
-                  primeira: primeiraMensalidadeCompleto,
-                  mensal: totalCompleto,
-                  anual: totalAnualCompleto
-                }
-              });
+              
 
               // Store phrases in object for unified textarea
               this.frases = {
@@ -1225,7 +1199,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               // Update unified textarea based on selected checkbox
               this.updateFraseUnificada();
             } catch (error) {
-            console.error("Erro ao calcular mensalidade:", error);
+            
             // Mostrar erro visual no input
             this.inputField.classList.add('error');
             setTimeout(() => this.inputField.classList.remove('error'), 3000);
@@ -1449,7 +1423,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
               if (checkboxNow.checked) {
                 this.estado = estado;
-                console.log('Estado selecionado:', estado);
+                
                 if (this.valorFipe > 0) {
                   await this.calculaMensalidade();
                 }
@@ -1460,11 +1434,11 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
                   this.estado = remainingChecked[0].dataset.estado;
                 } else {
                   this.estado = null;
-                  console.clear();
+                  
                 }
               }
             } catch (error) {
-              console.error("Erro ao processar checkbox:", error);
+              
             }
 
             // Recalcular após mudança de estado apenas se há estado selecionado
@@ -1516,7 +1490,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
           if (spElement) {
             spElement.checked = true;
           }
-          console.log("Estado padrão definido como SP");
+          
         }
 
         // Limpar classes anteriores do input
@@ -1594,7 +1568,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
           this.showData(data, placa);
         } catch (error) {
-          console.warn("Erro ao buscar placa:", error);
+          
           // Mostrar erro no textarea
           this.dadosFipeField.value = "Erro ao buscar dados da placa. Verifique se a placa está correta.";
           this.autoResizeTextarea(this.dadosFipeField);
@@ -1671,7 +1645,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
         const placaValue = placa || this.inputField.value;
         const existingIndex = quotes.findIndex(quote => quote.placa === placaValue);
         if (existingIndex !== -1) {
-          console.log('Placa already exists, updating:', placaValue);
+          
         }
 
         // Try to collect plan values from DOM if available
@@ -1702,12 +1676,12 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
         if (existingIndex !== -1) {
           quotes[existingIndex] = Object.assign({}, quotes[existingIndex], newQuote);
           localStorage.setItem('quotes', JSON.stringify(quotes));
-          console.log('Quote updated:', quotes[existingIndex]);
+          
         } else {
           quotes.push(newQuote);
           localStorage.setItem('quotes', JSON.stringify(quotes));
           incrementCounters();
-          console.log('Quote saved:', newQuote);
+          
         }
       }
 
@@ -1836,16 +1810,16 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
     function listPlanValues() {
       const base = readBaseValues();
-      console.log('Valores dos Planos:');
+      
       Object.keys(base).forEach(estado => {
         const data = base[estado];
         const planos = data.planos || data.data?.planos || data;
         if (Array.isArray(planos)) {
           planos.forEach(plano => {
-            console.log(`Estado: ${estado}, Plano: ${plano.idPlano}`);
+            
             if (plano.itensPlano) {
               plano.itensPlano.forEach(item => {
-                console.log(`  Item: ${item.codigoItem}, Preço: ${item.preco}`);
+                
               });
             }
           });
@@ -1856,151 +1830,71 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
     // Função para testar cálculos de mensalidades com valor FIPE de exemplo
     function testCalculations() {
       const testFipe = 50000; // Exemplo de valor FIPE
-      console.log(`Testando cálculos para FIPE: R$ ${testFipe}`);
+      
       const results = computeMensalidadesForAllStates(testFipe);
       Object.keys(results).forEach(estado => {
         const res = results[estado];
         if (res.error) {
-          console.log(`Erro em ${estado}: ${res.error}`);
+          
         } else {
-          console.log(`Estado: ${estado}`);
-          console.log(`  Essencial: Mensal R$ ${res.essencial.mensal}, Primeira R$ ${res.essencial.primeira}, Anual R$ ${res.essencial.anual}`);
-          console.log(`  Sem Vidro: Mensal R$ ${res.semVidro.mensal}, Primeira R$ ${res.semVidro.primeira}, Anual R$ ${res.semVidro.anual}`);
-          console.log(`  Completo: Mensal R$ ${res.completo.mensal}, Primeira R$ ${res.completo.primeira}, Anual R$ ${res.completo.anual}`);
+          
+          
+          
+          
         }
       });
     }
     
     // Função para debug: força reload dos dados base e compara cálculos
     async function debugCalculations() {
-      console.log('Forçando reload dos dados base...');
+      
       const freshData = await loadAllBaseValues();
-      console.log('Dados base recarregados.');
+      
 
       const testFipe = 29239; // Changed to match your actual test case (Kombi FIPE)
-      console.log(`Comparando cálculos para FIPE: R$ ${testFipe} com dados frescos:`);
+      
 
       const estados = ['SP', 'MG', 'RJ', 'SC', 'RS'];
       for (const estado of estados) {
-        console.log(`\nEstado: ${estado}`);
+        
         const data = freshData[estado];
         if (!data) {
-          console.log('  Dados não encontrados.');
+          
           continue;
         }
         const planos = data.planos || data.data?.planos || data;
         const plano = Array.isArray(planos) ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + estado) : null;
         if (!plano) {
-          console.log('  Plano não encontrado.');
+          
           continue;
         }
 
         const planService = new kl();
         const { indice, looviFipe } = getIndiceAndLooviFipe(testFipe);
-        console.log(`  FIPE: ${testFipe}, Índice: ${indice}, Loovi FIPE: ${looviFipe}`);
+        
 
         // Essencial
         const rEssencial = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false };
         const mensalEssencial = planService.getCalcPlanPrice(plano, looviFipe, rEssencial);
-        console.log(`  Essencial: R$ ${mensalEssencial.toFixed(2)}`);
 
         // Sem Vidro
         const rSemVidro = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: false };
         const mensalSemVidro = planService.getCalcPlanPrice(plano, looviFipe, rSemVidro);
-        console.log(`  Sem Vidro: R$ ${mensalSemVidro.toFixed(2)}`);
 
         // Completo
         const rCompleto = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: true };
         const mensalCompleto = planService.getCalcPlanPrice(plano, looviFipe, rCompleto);
-        console.log(`  Completo: R$ ${mensalCompleto.toFixed(2)}`);
 
         // Debug individual components for MG
         if (estado === 'MG') {
-          console.log(`  Expected MG Essencial: R$ 103.90`);
-          console.log(`  Expected MG Completo: R$ 207.90`);
-          console.log(`  Current MG Essencial: R$ ${mensalEssencial.toFixed(2)}`);
-          console.log(`  Current MG Completo: R$ ${mensalCompleto.toFixed(2)}`);
-          console.log(`  Difference Essencial: ${Math.abs(parseFloat(mensalEssencial.toFixed(2)) - 103.90).toFixed(2)}`);
-          console.log(`  Difference Completo: ${Math.abs(parseFloat(mensalCompleto.toFixed(2)) - 207.90).toFixed(2)}`);
-
-          // Break down components
-          console.log(`  --- Component breakdown for MG ---`);
-          console.log(`  Roubo/Furto: R$ ${planService.getRouboFurtoPrice(plano, looviFipe)}`);
-          console.log(`  PT Roubo/Furto: R$ ${planService.getPtRouboFurtoPrice(plano, looviFipe)}`);
-          console.log(`  Agravo: R$ ${planService.getAgravoPrice(plano, rEssencial.car)}`);
-          console.log(`  Servico Loovi (Essencial): R$ ${planService.getServicoLooviPrice(plano, looviFipe, false)}`);
-          console.log(`  Servico Loovi (Completo): R$ ${planService.getServicoLooviPrice(plano, looviFipe, true)}`);
-          console.log(`  Seg Colisao: R$ ${planService.getSegColisaoPrice(plano, looviFipe)}`);
-          console.log(`  Seg Terceiros: R$ ${planService.getSegTerceirosPrice(plano)}`);
-          console.log(`  Vidros: R$ ${planService.getVidrosPrice(plano)}`);
-
-          // Calculate expected vs actual
-          const expectedCompleto = 207.90;
-          const actualCompleto = parseFloat(mensalCompleto.toFixed(2));
-          const difference = expectedCompleto - actualCompleto;
-
-          console.log(`  --- Analysis ---`);
-          console.log(`  Expected Completo: R$ ${expectedCompleto}`);
-          console.log(`  Actual Completo: R$ ${actualCompleto}`);
-          console.log(`  Missing amount: R$ ${difference.toFixed(2)}`);
-
-          // Check if vidros price matches the difference
-          const vidrosPrice = planService.getVidrosPrice(plano);
-          console.log(`  Vidros price: R$ ${vidrosPrice}`);
-          console.log(`  Is vidros the issue? ${Math.abs(vidrosPrice - Math.abs(difference)) < 0.01 ? 'YES' : 'NO'}`);
-
-          // Check individual calculations
-          const basePrice = planService.getRouboFurtoPrice(plano, looviFipe) +
-                           planService.getPtRouboFurtoPrice(plano, looviFipe) +
-                           planService.getAgravoPrice(plano, rEssencial.car) +
-                           planService.getServicoLooviPrice(plano, looviFipe, true); // with collision
-
-          const collisionPrice = planService.getSegColisaoPrice(plano, looviFipe) +
-                                planService.getSegTerceirosPrice(plano) +
-                                planService.getSegLtiPrice(plano);
-
-          const glassPrice = planService.getVidrosPrice(plano);
-
-          console.log(`  Base price (RF + PT + Agravo + Loovi): R$ ${basePrice.toFixed(2)}`);
-          console.log(`  Collision price (SegColisao + SegTerceiros + LTI): R$ ${collisionPrice.toFixed(2)}`);
-          console.log(`  Glass price: R$ ${glassPrice.toFixed(2)}`);
-          console.log(`  Manual calculation: R$ ${(basePrice + collisionPrice + glassPrice).toFixed(2)}`);
-          console.log(`  getCalcPlanPrice result: R$ ${mensalCompleto.toFixed(2)}`);
-
-          // Check if there's a missing component
-          const manualTotal = basePrice + collisionPrice + glassPrice;
-          const apiTotal = parseFloat(mensalCompleto.toFixed(2));
-          const missing = 207.90 - apiTotal;
-
-          console.log(`  Expected total: R$ 207.90`);
-          console.log(`  API total: R$ ${apiTotal}`);
-          console.log(`  Missing amount: R$ ${missing.toFixed(2)}`);
-
-          // Check if smart car is being added
-          try {
-            const smartPrice = planService.getSmartPrice(plano);
-            console.log(`  Smart car price: R$ ${smartPrice}`);
-            if (smartPrice > 0) {
-              console.log(`  With smart car: R$ ${(apiTotal + smartPrice).toFixed(2)}`);
-            }
-          } catch (e) {
-            console.log(`  Smart car error: ${e.message}`);
-          }
-
-          console.log(`  --- End breakdown ---`);
         }
 
         // Comparar com cache
         try {
           const cached = computeMensalidadesFromCache(estado, testFipe);
-          console.log(`  Cache Essencial: R$ ${cached.essencial.mensal}`);
-          console.log(`  Cache Sem Vidro: R$ ${cached.semVidro.mensal}`);
-          console.log(`  Cache Completo: R$ ${cached.completo.mensal}`);
           if (cached.essencial.mensal !== mensalEssencial.toFixed(2)) {
-            console.log(`  *** DIFERENÇA EM ESSENCIAL: Fresco ${mensalEssencial.toFixed(2)} vs Cache ${cached.essencial.mensal}`);
           }
         } catch (e) {
-          console.log(`  Erro no cache: ${e.message}`);
         }
       }
     }
@@ -2112,7 +2006,7 @@ async function gerarPDF(nomeArquivo) {
     }
 
   } catch (e) {
-    console.error('Erro gerarPDF:', e);
+    
     alert('Erro ao gerar PDF: ' + (e.message || e));
   }
 }
@@ -2194,8 +2088,8 @@ async function calcularMensalidadeComAcrescimos(valorFipe, tipoVeiculo, estado, 
 
   if (!plano) {
     console.log('Planos disponíveis:', planos.map(p => p.idPlano));
-    console.log('Estado solicitado:', estado);
-    console.log('Dados da API:', dadosPlanoAPI);
+    
+    
     throw new Error(`Plano não encontrado para estado ${estado}. Planos disponíveis: ${planos.map(p => p.idPlano).join(', ')}`);
   }
 
@@ -2250,7 +2144,7 @@ async function calcularMensalidadeComAcrescimos(valorFipe, tipoVeiculo, estado, 
   }
 
   const valorMensalidadeFinal = parseFloat(valorBase.toFixed(2));
-  console.log(`Valor mensal final calculado: R$ ${valorMensalidadeFinal}`);
+  
   return valorMensalidadeFinal;
 }
 
