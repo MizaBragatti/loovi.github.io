@@ -1,3 +1,4 @@
+
 async function loadBaseValues() {
   const key = 'baseValues';
   let baseValues = JSON.parse(localStorage.getItem(key)) || {};
@@ -327,7 +328,7 @@ function computeMensalidadesFromCache(estado, valorFipe, placa = null, tipoVeicu
 
   // Determina categoria de agravo baseada no tipo de veículo
   const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
-  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM";
 
   // calcula mensalidades array - ativar smart para SUVs
   const r = { car: categoriaAgravo, colisao: false, smart: isSUV, vidros: false };
@@ -396,7 +397,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
   // Determina categoria de agravo baseada no tipo de veículo
   const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
-  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM";
 
   // Parâmetros para cálculo - ativar smart para SUVs
   const r = {
@@ -707,7 +708,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
          if (plano) {
            // Determina categoria de agravo (car) baseada no tipo de veículo
            const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
-           const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+           const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM";
 
            let r = {
              car: categoriaAgravo,
@@ -963,7 +964,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
               } else if (this.tipoVeiculo) {
                 // Detecção automática baseada no tipo de veículo da placa
                 categoriaAgravoUI = getCategoriaAgravo(this.tipoVeiculo);
-                isSUVUI = categoriaAgravoUI === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravoUI === "CAT_AGRAVO_OUTROS";
+                isSUVUI = categoriaAgravoUI === "CAT_AGRAVO_PICKUP_CAM";
               }
 
 
@@ -2114,7 +2115,8 @@ async function calcularMensalidadeComAcrescimos(valorFipe, tipoVeiculo, estado, 
 
 
   // Usar categoria de agravo correta no cálculo
-  valorBase = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravo, colisao: false, smart: false, vidros: false }).toFixed(2));
+  const isSUVBase = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM";
+  valorBase = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravo, colisao: false, smart: isSUVBase, vidros: false }).toFixed(2));
 
   // Considerar adicionais opcionais
   if (colisaoSelecionado) {
@@ -2131,11 +2133,12 @@ async function calcularMensalidadeComAcrescimos(valorFipe, tipoVeiculo, estado, 
     } else if (tipoVeiculo) {
       // Detecção automática baseada no tipo de veículo da placa
       categoriaAgravoColisao = getCategoriaAgravo(tipoVeiculo);
+      const isSUVColisao = categoriaAgravoColisao === "CAT_AGRAVO_PICKUP_CAM";
     }
 
 
     // Recalcular valor com colisão usando categoria correta
-    const valorComColisao = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravoColisao, colisao: true, smart: false, vidros: false }).toFixed(2));
+    const valorComColisao = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravoColisao, colisao: true, smart: isSUVColisao, vidros: false }).toFixed(2));
     valorBase = valorComColisao;
   }
   if (vidrosSelecionado) {
