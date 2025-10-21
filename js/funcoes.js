@@ -764,4 +764,3 @@ function salvarDados() {
     salvarHistorico(dadosHistorico);
     alert('Dados salvos no histórico!');
 }
-
