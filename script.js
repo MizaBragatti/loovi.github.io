@@ -3,14 +3,19 @@ async function loadBaseValues() {
   let baseValues = JSON.parse(localStorage.getItem(key)) || {};
 
   const calculadora = new Calcular();
-  const estados = ['MG', 'SP', 'RJ', 'SC', 'RS']; // Estados específicos
+  const estados = ['SP', 'MG', 'RJ', 'SC', 'RS']; // Estados específicos
 
   for (const estado of estados) {
     if (!baseValues[estado]) {
       try {
         const data = await calculadora.buscarCotacaoSAP(estado);
-        baseValues[estado] = data;
-        console.log(`Loaded base values for ${estado}`);
+        // Garante que o dado salvo é um objeto válido e contém planos
+        if (data && (Array.isArray(data.planos) || Array.isArray(data.data?.planos) || Array.isArray(data))) {
+          baseValues[estado] = data;
+          console.log(`Loaded base values for ${estado}`);
+        } else {
+          console.warn(`Dados de planos inválidos para o estado ${estado}:`, data);
+        }
       } catch (error) {
         console.error(`Error loading for ${estado}:`, error);
       }
@@ -73,7 +78,7 @@ function getBaseFromLocalStorage(estado) {
 }
 
 // Default estados list used across the app
-const DEFAULT_ESTADOS = ['MG', 'SP', 'RJ', 'SC', 'RS'];
+const DEFAULT_ESTADOS = ['SP', 'MG', 'RJ', 'SC', 'RS'];
 
 // Counter localStorage keys
 const COUNTER_KEYS = {
@@ -249,6 +254,27 @@ async function getOrLoadAllBaseValues(estados = DEFAULT_ESTADOS) {
   return await loadAllBaseValues(estados);
 }
 
+// Determina a categoria de agravo baseada no tipo de veículo
+function getCategoriaAgravo(tipoVeiculo) {
+  if (!tipoVeiculo) return "CAT_AGRAVO_VEICULO_LEVE";
+
+  const tipo = String(tipoVeiculo).toLowerCase();
+
+  // Verificar se é SUV
+  if (tipo.includes('suv') || tipo.includes('pickup') || tipo.includes('camionete')) {
+    return "CAT_AGRAVO_PICKUP_CAM";
+  }
+
+  // Verificar se é utilitário
+  if (tipo.includes('util') || tipo.includes('utilitário') || tipo.includes('utilitario') ||
+      tipo.includes('van') || tipo.includes('furgão') || tipo.includes('furgon')) {
+    return "CAT_AGRAVO_OUTROS";
+  }
+
+  // Padrão para veículos leves
+  return "CAT_AGRAVO_VEICULO_LEVE";
+}
+
 // Determina índice e looviFipe a partir do valor FIPE
 function getIndiceAndLooviFipe(valorFipe) {
   let indice = 0;
@@ -290,7 +316,7 @@ function getIndiceAndLooviFipe(valorFipe) {
 }
 
 // Calcula mensalidades usando dados do localStorage (cache). Retorna mesmo formato de calculateMensalidades
-function computeMensalidadesFromCache(estado, valorFipe, placa = null) {
+function computeMensalidadesFromCache(estado, valorFipe, placa = null, tipoVeiculo = null) {
   const base = getBaseFromLocalStorage(estado);
   if (!base) throw new Error(`Dados base para estado ${estado} não encontrados no cache`);
 
@@ -299,8 +325,13 @@ function computeMensalidadesFromCache(estado, valorFipe, placa = null) {
   if (!plano) throw new Error(`Plano não encontrado para estado ${estado} no cache`);
 
   const planService = new kl();
-  // calcula mensalidades array
-  const r = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false };
+
+  // Determina categoria de agravo baseada no tipo de veículo
+  const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
+  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+
+  // calcula mensalidades array - ativar smart para SUVs
+  const r = { car: categoriaAgravo, colisao: false, smart: isSUV, vidros: false };
   const mensalidades = [];
   for (let i = 10; i <= 150; i += 10) {
     mensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, r).toFixed(2)));
@@ -349,7 +380,7 @@ function computeMensalidadesForAllStates(valorFipe, placa = null) {
   return results;
 }
 
-async function calculateMensalidades(estado, valorFipe, placa = null) {
+async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeiculo = null) {
   const resultado = await getBaseDataForEstado(estado);
   if (!resultado) {
     throw new Error(`Failed to get base data for estado: ${estado}`);
@@ -364,11 +395,15 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
   // Instancia o serviço de planos
   const planService = new kl();
 
-  // Parâmetros para cálculo
+  // Determina categoria de agravo baseada no tipo de veículo
+  const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
+  const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+
+  // Parâmetros para cálculo - ativar smart para SUVs
   const r = {
-    car: "CAT_AGRAVO_VEICULO_LEVE",
+    car: categoriaAgravo,
     colisao: false,
-    smart: false,
+    smart: isSUV,
     vidros: false
   };
 
@@ -432,17 +467,17 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
     }
   
     const price = mensalidades[indice];
-  
+
     // Calcula para Essencial
-    const rEssencial = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false };
+    const rEssencial = { car: categoriaAgravo, colisao: false, smart: isSUV, vidros: false };
     const valorMensalidadeEssencial = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rEssencial).toFixed(2));
-  
+
     // Calcula para Sem Vidro
-    const rSemVidro = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: false };
+    const rSemVidro = { car: categoriaAgravo, colisao: true, smart: isSUV, vidros: false };
     const valorMensalidadeSemVidro = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rSemVidro).toFixed(2));
-  
+
     // Calcula para Completo
-    const rCompleto = { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: true, smart: false, vidros: true };
+    const rCompleto = { car: categoriaAgravo, colisao: true, smart: isSUV, vidros: true };
     const valorMensalidadeCompleto = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, rCompleto).toFixed(2));
   
     const valorAtivacao = 299.90;
@@ -634,7 +669,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         const url = "https://ticjxjby64.execute-api.us-east-1.amazonaws.com/producao/proxy/v2/SAP";
         const apiKey = "RRcW9gj2tZ6pSVsnbpmKhshpXC3yR9EklCwqQyh0";
         //const payload = "eyJ1cmwiOiJodHRwczovL3NhcGlpcy5sb292aS5jb20uYnI6NjAwMDAvcGxhbm8vQXBpL3YxL29idGVyUGxhbm9zUG9yRXN0YWRvL1NQL2FwcCIsIm1ldG9kbyI6IkdFVCIsImhlYWRlcnMiOnsicmVxdWVzdGVyIjoiUG9ydGFsIiwiY290YWNhbyI6IiJ9LCJib2R5Ijp7fX0==";
-        let payload = '{"url":"https://sapiis.loovi.com.br:60000/plano/Api/v1/obterPlanosPorEstado/' + estado + '/app","metodo":"GET","headers":{"requester":"Portal","cotacao":""},"body":{}}'
+        let payload = '{"url":"https://sapiis.loovi.com.br:60000/plano/Api/v1/obterPlanosPorEstado/' + estado.toUpperCase() + '/app","metodo":"GET","headers":{"requester":"Portal","cotacao":""},"body":{}}'
     
         try {
           const response = await fetch(url, {
@@ -656,35 +691,43 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         }
     
     
-       arrayMensalidades(resultado, estado) {
+       arrayMensalidades(resultado, estado, tipoVeiculo = null) {
          // Supondo que resultado seja um array de planos ou tenha um campo com os planos
          // Exemplo: resultado.planos ou resultado.data.planos
          let planos = resultado.planos || resultado.data?.planos || resultado; // ajuste conforme estrutura real
 
+         // Se vier como objeto, converte para array
+         if (!Array.isArray(planos) && planos && typeof planos === 'object') {
+           planos = Object.values(planos);
+         }
+
          // Busca o plano pelo idPlano desejado
          let plano = Array.isArray(planos)
-         ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + estado)
-         : null;
+           ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + estado)
+           : null;
 
          if (plano) {
-           // Parâmetros para cálculo
+           // Determina categoria de agravo (car) baseada no tipo de veículo
+           const categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
+           const isSUV = categoriaAgravo === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravo === "CAT_AGRAVO_OUTROS";
+
            let r = {
-             car: "CAT_AGRAVO_VEICULO_LEVE",
+             car: categoriaAgravo,
              colisao: false,
-             smart: false,
+             smart: isSUV,
              vidros: false
            };
 
            // Instancia o serviço de planos
            let planService = new kl;
 
-           // Calcula o preço
+           // Calcula o preço usando a categoria correta
            let mensalidades = [];
            for (let i = 10; i <= 150; i += 10) {
              mensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, r).toFixed(2)));
            }
 
-           console.log(estado + " mensalidades:", mensalidades);
+           console.log(estado + " mensalidades (" + categoriaAgravo + "):", mensalidades);
          } else {
            console.warn("Plano não encontrado!");
          }
@@ -779,7 +822,8 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
      async    main(estado) {
 
          let resultado = await this.buscarCotacaoSAP(estado);
-         this.arrayMensalidades(resultado, estado);
+  this.arrayMensalidades(resultado, estado);
+  return resultado;
 
        }
     
@@ -802,7 +846,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           this.dadosFipeField = document.querySelector("#dadosFipe") || document.createElement('textarea');
           this.valorFipe = 0;
           this.checkboxes = document.querySelectorAll('input[type="checkbox"]');
-          this.estado = "SP";
+          this.estado = null;
           this.sellerCheckboxes = document.querySelectorAll('#miza, #sofia, #nicolas');
           this.buttonHistoric = document.querySelector(".img-historico") || document.createElement('img');
           this.historic = document.querySelector(".modalHistorico") || document.createElement('div');
@@ -814,6 +858,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           // attach auto-resize listener for dadosFipe textarea
           // (call after DOMContentLoaded when Ui is instantiated)
           this.attachResizeListener();
+    // this.main("SP"); // Call main with default state - removed
 
         }
         
@@ -851,14 +896,59 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
 
           async calculaMensalidade() {
               try {
+                // Verificar se estado está definido
+                if (!this.estado || this.estado === 'undefined') {
+                  console.warn("Nenhum estado selecionado. Selecione um estado primeiro.");
+                  // Mostrar erro visual no input se não há estado selecionado
+                  this.inputField.classList.add('error');
+                  setTimeout(() => this.inputField.classList.remove('error'), 3000);
+                  return;
+                }
+ 
                 // Verificar se dados estão em cache, senão buscar da API e salvar
                 const resultado = await getBaseDataForEstado(this.estado);
-              const planos = resultado.planos || resultado.data?.planos || resultado;
-              const plano = Array.isArray(planos) ? planos.find(p => p.idPlano === "ROUBO_FURTO_PT_" + this.estado) : null;
-              if (!plano) {
-                console.warn("Plano não encontrado");
-                return;
-              }
+                if (!resultado) {
+                  console.warn("Dados base não encontrados para estado:", this.estado);
+                  return;
+                }
+ 
+                let planos = resultado.planos || resultado.data?.planos || resultado;
+                // Se planos vier como objeto (mapa), converte para array
+                if (!Array.isArray(planos) && planos && typeof planos === 'object') {
+                  planos = Object.values(planos);
+                }
+                if (!Array.isArray(planos)) {
+                  console.warn("Dados de planos inválidos", planos);
+                  return;
+                }
+ 
+                // Tentar diferentes possibilidades de nome do plano
+                const possiveisPlanos = [
+                  "ROUBO_FURTO_PT_" + this.estado,
+                  "ROUBO_FURTO_PT_RAST_" + this.estado,
+                  "ROUBO_FURTO_PT_" + this.estado.toUpperCase(),
+                  "ROUBO_FURTO_PT_RAST_" + this.estado.toUpperCase(),
+                  "LICIT_ROUBO_FURTO_PT_" + this.estado,
+                  "LICIT_ROUBO_FURTO_PT_RAST_" + this.estado,
+                  "LICIT_ROUBO_FURTO_PT_ANUAL_" + this.estado,
+                  "LICIT_ROUBO_FURTO_PT_RAST_ANUAL_" + this.estado,
+                  "TESTE_" + this.estado,
+                  "ROUBO_FURTO_PT_ANUAL_" + this.estado,
+                  "ROUBO_FURTO_PT_RAST_ANUAL_" + this.estado
+                ];
+ 
+                let plano = null;
+                for (const nomePlano of possiveisPlanos) {
+                  plano = planos.find(p => p.idPlano === nomePlano);
+                  if (plano) break;
+                }
+ 
+                if (!plano) {
+                  console.warn("Plano não encontrado para estado:", this.estado);
+                  console.log("Planos disponíveis na API:", planos.map(p => p.idPlano));
+                  console.log("Dados completos do estado:", resultado);
+                  return;
+                }
    
               // Log plano data for debugging
               console.log('Plano data from API:', {
@@ -868,12 +958,38 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                 valorFipe: this.valorFipe
               });
               const planService = new kl();
+
+              // Determinar categoria de agravo baseada no tipo de veículo
+              let categoriaAgravoUI = "CAT_AGRAVO_VEICULO_LEVE"; // padrão para veículos leves
+              let isSUVUI = false;
+
+              // Verificar checkboxes manuais primeiro
+              const suvElementUI = document.getElementById('suv');
+              const utilElementUI = document.getElementById('util');
+              if (suvElementUI && suvElementUI.checked) {
+                categoriaAgravoUI = "CAT_AGRAVO_PICKUP_CAM";
+                isSUVUI = true;
+              } else if (utilElementUI && utilElementUI.checked) {
+                categoriaAgravoUI = "CAT_AGRAVO_OUTROS";
+                isSUVUI = true;
+              } else if (this.tipoVeiculo) {
+                // Detecção automática baseada no tipo de veículo da placa
+                categoriaAgravoUI = getCategoriaAgravo(this.tipoVeiculo);
+                isSUVUI = categoriaAgravoUI === "CAT_AGRAVO_PICKUP_CAM" || categoriaAgravoUI === "CAT_AGRAVO_OUTROS";
+              }
+
+
               let r = {
-                car: "CAT_AGRAVO_VEICULO_LEVE",
+                car: categoriaAgravoUI,
                 colisao: false,
-                smart: false,
+                smart: isSUVUI,
                 vidros: false
               };
+
+              // Debug: verificar se smart está sendo ativado para SUVs
+              if (isSUVUI) {
+                console.log('Smart ativado para SUV/Utilitário, categoria:', categoriaAgravoUI);
+              }
               // Calculate mensalidades array
               let mensalidades = [];
               for (let i = 10; i <= 150; i += 10) {
@@ -916,8 +1032,10 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                 indice = 14;
               }
 
+
               // Calculate values using the exact logic from the provided code
               const faixaFipe = "CAT_FIPE_" + (indice + 1) * 10 + "K"; // e.g., CAT_FIPE_30K for indice 2
+              console.log('Calculando com categoria:', categoriaAgravoUI, 'para estado:', this.estado);
 
               // Calculate colisao using calcularCotacaoFaixa logic
               let SRV_SEG_COLISAO = 0;
@@ -992,22 +1110,34 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                 valorColisao += itemSegLti.preco;
               }
 
-              // Get base mensalidade from essencial array
+              // Get base mensalidade from essencial array usando categoria de agravo correta
               const essencialMensalidades = [];
               for (let i = 10; i <= 150; i += 10) {
-                essencialMensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false }).toFixed(2)));
+                essencialMensalidades.push(parseFloat(planService.getCalcPlanPrice(plano, i, { car: categoriaAgravoUI, colisao: false, smart: isSUVUI, vidros: false }).toFixed(2)));
               }
               let valorMensalidade = essencialMensalidades[indice];
 
-              // Adjustments for vehicle type
-              const suvElement = document.getElementById('suv');
-              const utilElement = document.getElementById('util');
-              if (suvElement && suvElement.checked) {
-                valorMensalidade += 50;
+              // Verificar se os valores da API são válidos (não zerados)
+              const valorBaseAPI = essencialMensalidades[indice];
+              const usarDadosHardcoded = valorBaseAPI <= 0 || isNaN(valorBaseAPI);
+
+              if (usarDadosHardcoded) {
+                console.warn('API retornou valores inválidos, usando dados hardcoded como fallback');
+                // Usar lógica do código antigo como fallback
+                valorMensalidade = this.calcularComDadosHardcoded(indice, categoriaAgravoUI);
+              } else {
+                // A API já calcula com a categoria correta (leve ou pesada), não aplicar acréscimos extras
+                // O valorMensalidade já está correto da API
               }
-              if (utilElement && utilElement.checked) {
-                valorMensalidade += 50;
-              }
+
+              // Remover acréscimos manuais duplicados - a API já calcula corretamente
+              // const suvElement = document.getElementById('suv');
+              // const utilElement = document.getElementById('util');
+              // if (suvElement && suvElement.checked) {
+              //   valorMensalidade += 50;
+              // } else if (utilElement && utilElement.checked) {
+              //   valorMensalidade += 50;
+              // }
 
               // Calculate final values
               const valorMensalidadeEssencial = valorMensalidade;
@@ -1095,8 +1225,11 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
               // Update unified textarea based on selected checkbox
               this.updateFraseUnificada();
             } catch (error) {
-              console.error("Erro ao calcular mensalidade:", error);
-            }
+            console.error("Erro ao calcular mensalidade:", error);
+            // Mostrar erro visual no input
+            this.inputField.classList.add('error');
+            setTimeout(() => this.inputField.classList.remove('error'), 3000);
+          }
           }
 
 
@@ -1147,6 +1280,53 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
                this.verificarVendedor();
              });
            });
+         }
+
+         tipoVeiculoCheckboxData() {
+           const suvCheckbox = document.getElementById('suv');
+           const utilCheckbox = document.getElementById('util');
+
+           if (suvCheckbox) {
+             suvCheckbox.addEventListener('change', async () => {
+               // Desmarcar utilitário se SUV for marcado
+               if (suvCheckbox.checked) {
+                 utilCheckbox.checked = false;
+               }
+
+               // Se não há estado selecionado, definir SP como padrão internamente
+               if (!this.estado || this.estado === 'undefined') {
+                 this.estado = 'SP';
+               }
+
+               // Aguardar um pouco para garantir que o estado seja definido antes do cálculo
+               setTimeout(async () => {
+                 if (this.estado) {
+                   await this.calculaMensalidade();
+                 }
+               }, 100);
+             });
+           }
+
+           if (utilCheckbox) {
+             utilCheckbox.addEventListener('change', async () => {
+               // Desmarcar SUV se utilitário for marcado
+               if (utilCheckbox.checked) {
+                 suvCheckbox.checked = false;
+               }
+
+               // Se não há estado selecionado, definir SP como padrão internamente
+               if (!this.estado || this.estado === 'undefined') {
+                 this.estado = 'SP';
+               }
+
+               // Aguardar um pouco para garantir que o estado seja definido antes do cálculo
+               setTimeout(async () => {
+                 if (this.estado) {
+                   await this.calculaMensalidade();
+                 }
+               }, 100);
+             });
+           }
          }
 
       modalHistoric(){
@@ -1255,25 +1435,41 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         this.checkboxes.forEach(checkboxNow => {
           checkboxNow.addEventListener('change', async () => {
             try {
+              // Verificar quantos checkboxes estão marcados
+              const checkedBoxes = Array.from(this.checkboxes).filter(cb => cb.checked);
+
+              // Se tentando marcar e já há 2 marcados, impedir
+              if (checkboxNow.checked && checkedBoxes.length > 2) {
+                checkboxNow.checked = false;
+                // Removido o alert
+                return;
+              }
+
               let estado = checkboxNow.dataset.estado;
-              this.checkboxes.forEach(box => {
-                if (box !== checkboxNow) box.checked = false;
-              });
 
               if (checkboxNow.checked) {
                 this.estado = estado;
-                localStorage.setItem('selectedEstado', estado);
-                console.log(estado);
+                console.log('Estado selecionado:', estado);
                 if (this.valorFipe > 0) {
                   await this.calculaMensalidade();
                 }
               } else {
-                this.estado = null;
-                localStorage.removeItem('selectedEstado');
-                console.clear();
+                // Quando desmarcado, definir estado para o primeiro marcado ou null
+                const remainingChecked = Array.from(this.checkboxes).filter(cb => cb.checked);
+                if (remainingChecked.length > 0) {
+                  this.estado = remainingChecked[0].dataset.estado;
+                } else {
+                  this.estado = null;
+                  console.clear();
+                }
               }
             } catch (error) {
               console.error("Erro ao processar checkbox:", error);
+            }
+
+            // Recalcular após mudança de estado apenas se há estado selecionado
+            if (this.estado && this.valorFipe > 0) {
+              await this.calculaMensalidade();
             }
           });
         });
@@ -1293,6 +1489,8 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
         const inputValue = this.inputField.value.trim();
 
         if (inputValue === "") {
+          // Limpar valores da tabela quando input está vazio
+          this.clearTableValues();
           return { type: "vazio", value: "" };
         }
 
@@ -1312,9 +1510,17 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
 
       async checkPlate() {
         if (!this.estado) {
-          this.estado = "MG";
-          document.getElementById('sp').checked = true;
+          // Definir SP como estado padrão se nenhum estiver selecionado
+          this.estado = 'SP';
+          const spElement = document.getElementById('sp');
+          if (spElement) {
+            spElement.checked = true;
+          }
+          console.log("Estado padrão definido como SP");
         }
+
+        // Limpar classes anteriores do input
+        this.inputField.classList.remove('processing', 'error', 'success');
 
         const result = this.checkValue();
 
@@ -1325,27 +1531,51 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
             break;
 
           case "placa":
+            this.inputField.classList.add('processing');
             this.dadosFipeField.value = "Buscando dados da placa...";
             this.autoResizeTextarea(this.dadosFipeField);
-            await this.buscaPlaca(result.value);
+            try {
+              await this.buscaPlaca(result.value);
+              this.inputField.classList.remove('processing');
+              this.inputField.classList.add('success');
+              setTimeout(() => this.inputField.classList.remove('success'), 2000);
+            } catch (error) {
+              this.inputField.classList.remove('processing');
+              this.inputField.classList.add('error');
+              setTimeout(() => this.inputField.classList.remove('error'), 3000);
+            }
             break;
 
           case "fipe":
+            this.inputField.classList.add('processing');
             this.valorFipe = parseFloat(result.value.replace(/[^\d,]/g, "").replace(",", "."));
             this.dadosFipeField.value = `Valor FIPE: R$ ${this.valorFipe.toFixed(2).replace('.', ',')}`;
             this.autoResizeTextarea(this.dadosFipeField);
-            await this.calculaMensalidade();
+            try {
+              await this.calculaMensalidade();
+              this.inputField.classList.remove('processing');
+              this.inputField.classList.add('success');
+              setTimeout(() => this.inputField.classList.remove('success'), 2000);
+            } catch (error) {
+              this.inputField.classList.remove('processing');
+              this.inputField.classList.add('error');
+              setTimeout(() => this.inputField.classList.remove('error'), 3000);
+            }
             break;
 
           case "inválido":
+            this.inputField.classList.add('error');
             this.dadosFipeField.value =
               "Entrada inválida. Digite uma placa válida ou valor numérico.";
             this.autoResizeTextarea(this.dadosFipeField);
+            setTimeout(() => this.inputField.classList.remove('error'), 3000);
             break;
 
           default:
+            this.inputField.classList.add('error');
             this.dadosFipeField.value = "Erro inesperado.";
             this.autoResizeTextarea(this.dadosFipeField);
+            setTimeout(() => this.inputField.classList.remove('error'), 3000);
         }
       }
 
@@ -1365,7 +1595,10 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           this.showData(data, placa);
         } catch (error) {
           console.warn("Erro ao buscar placa:", error);
-          // Do not save quote if failed
+          // Mostrar erro no textarea
+          this.dadosFipeField.value = "Erro ao buscar dados da placa. Verifique se a placa está correta.";
+          this.autoResizeTextarea(this.dadosFipeField);
+          throw error; // Re-throw para que o catch no checkPlate capture
         }
       }
 
@@ -1436,10 +1669,9 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       saveQuote(placa) {
         const quotes = JSON.parse(localStorage.getItem('quotes')) || [];
         const placaValue = placa || this.inputField.value;
-        const exists = quotes.some(quote => quote.placa === placaValue);
-        if (exists) {
-          console.log('Placa already exists:', placaValue);
-          return;
+        const existingIndex = quotes.findIndex(quote => quote.placa === placaValue);
+        if (existingIndex !== -1) {
+          console.log('Placa already exists, updating:', placaValue);
         }
 
         // Try to collect plan values from DOM if available
@@ -1467,10 +1699,16 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           },
           vendedor: this.vendedor || null
         };
-        quotes.push(newQuote);
-        localStorage.setItem('quotes', JSON.stringify(quotes));
-        incrementCounters();
-        console.log('Quote saved:', newQuote);
+        if (existingIndex !== -1) {
+          quotes[existingIndex] = Object.assign({}, quotes[existingIndex], newQuote);
+          localStorage.setItem('quotes', JSON.stringify(quotes));
+          console.log('Quote updated:', quotes[existingIndex]);
+        } else {
+          quotes.push(newQuote);
+          localStorage.setItem('quotes', JSON.stringify(quotes));
+          incrementCounters();
+          console.log('Quote saved:', newQuote);
+        }
       }
 
 
@@ -1484,24 +1722,30 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       attachInputListener() {
         let timeout;
         this.inputField.addEventListener("input", () => {
-          if (!this.estado) {
-            this.estado = "SP";
-            document.getElementById('sp').checked = true;
-          }
+          // Transformar letras minúsculas em maiúsculas
+          this.inputField.value = this.inputField.value.toUpperCase();
+          // Resetar o timeout a cada digitação
           clearTimeout(timeout);
-          timeout = setTimeout(() => this.init(), 500);
+          // Definir novo timeout para chamar a função após 500ms de inatividade
+          timeout = setTimeout(() => {
+            this.init();
+          }, 500);
         });
         this.inputField.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            if (!this.estado) {
-              this.estado = "SP";
-              document.getElementById('sp').checked = true;
-            }
             clearTimeout(timeout);
             this.init();
           }
         });
+        // Adicionar listener no textarea para processar quando ganha foco
+        if (this.dadosFipeField) {
+          this.dadosFipeField.addEventListener("focus", () => {
+            if (this.inputField.value.trim()) {
+              this.init();
+            }
+          });
+        }
       }
 
       attachCopyListeners() {
@@ -1550,6 +1794,26 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
           const btnId = `btnFrase${this.selectedPlano.charAt(0).toUpperCase() + this.selectedPlano.slice(1)}`;
           document.getElementById(btnId)?.classList.add('active');
         }
+      }
+
+      clearTableValues() {
+        // Limpar todos os valores da tabela
+        document.getElementById('colisaoEssencial').textContent = '';
+        document.getElementById('primeiraMensalidadeEssencial').textContent = '';
+        document.getElementById('totalEssencial').textContent = '';
+        document.getElementById('totalAnualEssencial').textContent = '';
+
+        document.getElementById('colisaoCompleto').textContent = '';
+        document.getElementById('primeiraMensalidadeCompleto').textContent = '';
+        document.getElementById('totalCompleto').textContent = '';
+        document.getElementById('totalAnualCompleto').textContent = '';
+
+        // Limpar frases
+        this.frases = {};
+        this.updateFraseUnificada();
+
+        // Resetar valor FIPE
+        this.valorFipe = 0;
       }
 
       planoCheckboxData() {
@@ -1616,7 +1880,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       const testFipe = 29239; // Changed to match your actual test case (Kombi FIPE)
       console.log(`Comparando cálculos para FIPE: R$ ${testFipe} com dados frescos:`);
 
-      const estados = ['MG', 'SP', 'RJ', 'SC', 'RS'];
+      const estados = ['SP', 'MG', 'RJ', 'SC', 'RS'];
       for (const estado of estados) {
         console.log(`\nEstado: ${estado}`);
         const data = freshData[estado];
@@ -1765,15 +2029,14 @@ async function calculateMensalidades(estado, valorFipe, placa = null) {
       ui.attachInputListener();
       ui.checkboxData();
       ui.sellerCheckboxData();
+      ui.tipoVeiculoCheckboxData();
       ui.planoCheckboxData();
       ui.attachFraseButtons();
       ui.modalHistoric();
     
-      // Carrega estado salvo ou padrão SP
-    const savedEstado = localStorage.getItem('selectedEstado') || 'SP';
-      ui.estado = savedEstado;
+      // Estado não é mais salvo no localStorage
+      ui.estado = null;
       ui.categoriaFipe = "CAT_FIPE_100K";
-      document.getElementById(savedEstado.toLowerCase()).checked = true;
     
     // Attach PDF buttons to gerarPDF if present
     document.getElementById('btnGerarPDFEssencial')?.addEventListener('click', () => gerarPDF('PDF-Essencial'));
@@ -1876,4 +2139,162 @@ function verificarPlaca() {
 
 
 
+// Função principal para calcular mensalidade com acréscimos de SUV e Utilitário
+async function calcularMensalidadeComAcrescimos(valorFipe, tipoVeiculo, estado, dadosPlanoAPI = null, colisaoSelecionado = false, vidrosSelecionado = false) {
+  // Se dadosPlanoAPI não for fornecido, buscar da API
+  if (!dadosPlanoAPI) {
+    dadosPlanoAPI = await getBaseDataForEstado(estado);
+  }
+
+  // Determinar índice da FIPE
+  let indice = 0;
+  if (valorFipe <= 10000) indice = 0;
+  else if (valorFipe > 10000 && valorFipe <= 20000) indice = 1;
+  else if (valorFipe > 20000 && valorFipe <= 30000) indice = 2;
+  else if (valorFipe > 30000 && valorFipe <= 40000) indice = 3;
+  else if (valorFipe > 40000 && valorFipe <= 50000) indice = 4;
+  else if (valorFipe > 50000 && valorFipe <= 60000) indice = 5;
+  else if (valorFipe > 60000 && valorFipe <= 70000) indice = 6;
+  else if (valorFipe > 70000 && valorFipe <= 80000) indice = 7;
+  else if (valorFipe > 80000 && valorFipe <= 90000) indice = 8;
+  else if (valorFipe > 90000 && valorFipe <= 100000) indice = 9;
+  else if (valorFipe > 100000 && valorFipe <= 110000) indice = 10;
+  else if (valorFipe > 110000 && valorFipe <= 120000) indice = 11;
+  else if (valorFipe > 120000 && valorFipe <= 130000) indice = 12;
+  else if (valorFipe > 130000 && valorFipe <= 140000) indice = 13;
+  else if (valorFipe > 140000 && valorFipe <= 150000) indice = 14;
+  else indice = 14;
+
+  // Buscar valor base do plano
+  const planos = dadosPlanoAPI.planos || dadosPlanoAPI.data?.planos || dadosPlanoAPI;
+  if (!Array.isArray(planos)) {
+    throw new Error(`Dados de planos inválidos para estado ${estado}`);
+  }
+
+  // Tentar diferentes possibilidades de nome do plano
+  const possiveisPlanos = [
+    "ROUBO_FURTO_PT_" + estado,
+    "ROUBO_FURTO_PT_RAST_" + estado,
+    "ROUBO_FURTO_PT_" + estado.toUpperCase(),
+    "ROUBO_FURTO_PT_RAST_" + estado.toUpperCase(),
+    "LICIT_ROUBO_FURTO_PT_" + estado,
+    "LICIT_ROUBO_FURTO_PT_RAST_" + estado,
+    "LICIT_ROUBO_FURTO_PT_ANUAL_" + estado,
+    "LICIT_ROUBO_FURTO_PT_RAST_ANUAL_" + estado,
+    "TESTE_" + estado,
+    "ROUBO_FURTO_PT_ANUAL_" + estado,
+    "ROUBO_FURTO_PT_RAST_ANUAL_" + estado
+  ];
+
+  let plano = null;
+  for (const nomePlano of possiveisPlanos) {
+    plano = planos.find(p => p.idPlano === nomePlano);
+    if (plano) break;
+  }
+
+  if (!plano) {
+    console.log('Planos disponíveis:', planos.map(p => p.idPlano));
+    console.log('Estado solicitado:', estado);
+    console.log('Dados da API:', dadosPlanoAPI);
+    throw new Error(`Plano não encontrado para estado ${estado}. Planos disponíveis: ${planos.map(p => p.idPlano).join(', ')}`);
+  }
+
+  const planService = new kl();
+  const { indice: indiceCalculado, looviFipe } = getIndiceAndLooviFipe(valorFipe);
+  let valorBase = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: "CAT_AGRAVO_VEICULO_LEVE", colisao: false, smart: false, vidros: false }).toFixed(2));
+
+  // Determinar categoria de agravo baseada no tipo de veículo
+  let categoriaAgravo = "CAT_AGRAVO_VEICULO_LEVE"; // padrão para veículos leves
+
+  // Verificar checkboxes manuais primeiro
+  const suvElement = document.getElementById('suv');
+  const utilElement = document.getElementById('util');
+  if (suvElement && suvElement.checked) {
+    categoriaAgravo = "CAT_AGRAVO_PICKUP_CAM";
+  } else if (utilElement && utilElement.checked) {
+    categoriaAgravo = "CAT_AGRAVO_OUTROS";
+  } else if (tipoVeiculo) {
+    // Detecção automática baseada no tipo de veículo da placa
+    categoriaAgravo = getCategoriaAgravo(tipoVeiculo);
+  }
+
+
+  // Usar categoria de agravo correta no cálculo
+  valorBase = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravo, colisao: false, smart: false, vidros: false }).toFixed(2));
+
+  // Considerar adicionais opcionais
+  if (colisaoSelecionado) {
+    // Usar categoria de agravo correta no cálculo com colisão
+    let categoriaAgravoColisao = "CAT_AGRAVO_VEICULO_LEVE"; // padrão para veículos leves
+
+    // Verificar checkboxes manuais primeiro
+    const suvElement = document.getElementById('suv');
+    const utilElement = document.getElementById('util');
+    if (suvElement && suvElement.checked) {
+      categoriaAgravoColisao = "CAT_AGRAVO_PICKUP_CAM";
+    } else if (utilElement && utilElement.checked) {
+      categoriaAgravoColisao = "CAT_AGRAVO_OUTROS";
+    } else if (tipoVeiculo) {
+      // Detecção automática baseada no tipo de veículo da placa
+      categoriaAgravoColisao = getCategoriaAgravo(tipoVeiculo);
+    }
+
+
+    // Recalcular valor com colisão usando categoria correta
+    const valorComColisao = parseFloat(planService.getCalcPlanPrice(plano, looviFipe, { car: categoriaAgravoColisao, colisao: true, smart: false, vidros: false }).toFixed(2));
+    valorBase = valorComColisao;
+  }
+  if (vidrosSelecionado) {
+    const valorVidros = planService.getVidrosPrice(plano);
+    valorBase += valorVidros;
+  }
+
+  const valorMensalidadeFinal = parseFloat(valorBase.toFixed(2));
+  console.log(`Valor mensal final calculado: R$ ${valorMensalidadeFinal}`);
+  return valorMensalidadeFinal;
+}
+
+// Método auxiliar para cálculo com dados hardcoded quando API falha
+Ui.prototype.calcularComDadosHardcoded = function(indice, categoriaAgravo) {
+let valorMensalidade = 0;
+let valorColisao = 0;
+let valorVidros = 35.00;
+
+// Determinar estado atual
+const estadoAtual = this.estado || 'SP';
+
+// Usar dados hardcoded baseados no estado
+if (estadoAtual === 'MG') {
+  valorMensalidade = valoresMG[0][indice];
+  valorColisao = valoresMG[1][indice];
+  valorVidros = valoresMG[4];
+} else if (estadoAtual === 'RJ') {
+  valorMensalidade = valoresRJ[0][indice];
+  valorColisao = valoresRJ[1][indice];
+  valorVidros = valoresRJ[4];
+} else if (['SC', 'RS'].includes(estadoAtual)) {
+  valorMensalidade = valoresSul[0][indice];
+  valorColisao = valoresSul[1][indice];
+  valorVidros = valoresSul[4];
+} else {
+  // Outros estados (SP, etc.)
+  valorMensalidade = valoresOutrosEstados[0][indice];
+  valorColisao = valoresOutrosEstados[1][indice];
+}
+
+// Aplicar acréscimos para SUV/Utilitário se necessário
+if (categoriaAgravo === "CAT_AGRAVO_VEICULO_PESADO") {
+  if (estadoAtual === 'MG') {
+    valorMensalidade += valoresMG[2]; // SUV MG
+  } else if (estadoAtual === 'RJ') {
+    valorMensalidade += valoresRJ[2]; // SUV RJ
+  } else if (['SC', 'RS'].includes(estadoAtual)) {
+    valorMensalidade += valoresSul[2]; // SUV Sul
+  } else {
+    valorMensalidade += valoresOutrosEstados[2]; // SUV outros estados
+  }
+}
+
+return valorMensalidade;
+}
 
