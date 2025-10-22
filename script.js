@@ -1342,25 +1342,36 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
         }
 
         if (filteredQuotes.length === 0) {
-          lista.innerHTML = '';
+          lista.innerHTML = '<p>Ainda não foi buscada nenhuma placa.</p>';
           return;
         }
 
         filteredQuotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         filteredQuotes.forEach((quote, index) => {
-          const item = document.createElement('div');
-          item.className = 'cotacao-item';
-          const date = new Date(quote.timestamp).toLocaleString('pt-BR');
-          item.innerHTML = `
-            <p><strong>Placa:</strong> ${quote.placa || 'N/A'}</p>
-            <p><strong>Data:</strong> ${date}</p>
-            <p><strong>Estado:</strong> ${quote.estado || 'N/A'}</p>
-            ${quote.valorFipe ? `<p><strong>Valor FIPE:</strong> ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(quote.valorFipe)}</p>` : ''}
-            ${quote.vendedor ? `<p><strong>Vendedor:</strong> ${quote.vendedor.nome}</p>` : ''}
-            <button class="btn-delete" data-index="${quotes.indexOf(quote)}">Deletar</button>
-          `;
-          lista.appendChild(item);
+           const item = document.createElement('div');
+           item.className = 'cotacao-item';
+           const date = new Date(quote.timestamp).toLocaleString('pt-BR');
+           item.innerHTML = `
+             <p><strong>Placa:</strong> ${quote.placa || 'N/A'}</p>
+             ${quote.modelo ? `<p><strong>Modelo:</strong> ${quote.modelo}</p>` : ''}
+             <p><strong>Data:</strong> ${date}</p>
+             <p><strong>Estado:</strong> ${quote.estado || 'N/A'}</p>
+             ${quote.valorFipe ? `<p><strong>Valor FIPE:</strong> ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(quote.valorFipe)}</p>` : ''}
+             ${quote.vendedor ? `<p><strong>Vendedor:</strong> ${quote.vendedor.nome}</p>` : ''}
+             <div class="buttons-container">
+               <button class="btn-delete" data-index="${quotes.indexOf(quote)}">Deletar</button>
+               <button class="btn-consultar" data-index="${quotes.indexOf(quote)}">Consultar</button>
+             </div>
+           `;
+           lista.appendChild(item);
+         });
+
+        document.querySelectorAll('.btn-consultar').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const index = e.target.getAttribute('data-index');
+            this.consultarQuote(index);
+          });
         });
 
         document.querySelectorAll('.btn-delete').forEach(btn => {
@@ -1377,6 +1388,35 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
         localStorage.setItem('quotes', JSON.stringify(quotes));
         this.displayHistory(this.inputBuscar.value.toLowerCase());
         this.updateStats();
+      }
+
+      consultarQuote(index) {
+        const quotes = JSON.parse(localStorage.getItem('quotes')) || [];
+        const quote = quotes[index];
+        if (quote) {
+          // Preencher placa no campo de entrada
+          this.inputField.value = quote.placa || '';
+
+          // Marcar o estado correspondente
+          if (quote.estado) {
+            const estadoCheckbox = document.getElementById(quote.estado.toLowerCase());
+            if (estadoCheckbox) {
+              // Desmarcar todos os estados primeiro
+              this.checkboxes.forEach(cb => cb.checked = false);
+              // Marcar o estado da cotação
+              estadoCheckbox.checked = true;
+              this.estado = quote.estado;
+            }
+          }
+
+          // Fechar o modal do histórico
+          this.historic.classList.remove("hidden");
+
+          // Disparar a consulta automaticamente
+          setTimeout(() => {
+            this.init();
+          }, 100);
+        }
       }
 
       updateStats() {
@@ -1501,7 +1541,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
 
         switch (result.type) {
           case "vazio":
-            this.dadosFipeField.value = "Digite uma placa ou valor FIPE.";
+            this.dadosFipeField.value = "Ainda não tem placa adicionada.";
             this.autoResizeTextarea(this.dadosFipeField);
             break;
 
@@ -1622,6 +1662,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
   try { autoResize(this.dadosFipeField); } catch (e) { this.autoResizeTextarea(this.dadosFipeField); }
         this.categoriaFipe = this.getCategoriaFipe(this.valorFipe)
         this.tipoVeiculo = data.TipoVeiculo ?? data.TipoVeculo;
+        this.modelo = data.Modelo;
 
         await this.calculaMensalidade();
 
@@ -1646,7 +1687,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
         const placaValue = placa || this.inputField.value;
         const existingIndex = quotes.findIndex(quote => quote.placa === placaValue);
         if (existingIndex !== -1) {
-          
+
         }
 
         // Try to collect plan values from DOM if available
@@ -1661,6 +1702,7 @@ async function calculateMensalidades(estado, valorFipe, placa = null, tipoVeicul
           estado: this.estado,
           categoria: this.categoriaFipe || null,
           tipoVeiculo: this.tipoVeiculo || null,
+          modelo: this.modelo || null,
           valorFipe: this.valorFipe || null,
           planos: {
             essencial: {
