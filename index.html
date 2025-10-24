@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta FIPE - Planos | Loovi Seguros</title>
+  <link rel="stylesheet" href="src/frontend/sistemaSeguros.css" />
+</head>
+<body>
+  <div id="loading-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; font-family: Arial, sans-serif; font-size: 24px; color: #333; background: linear-gradient(135deg, #f5f7fa 0%, #e3ecf7 100%);">
+    Carregando...
+  </div>
+ <main class="main" style="display: none;">
+    <header class="header">
+      <h1>Consulta FIPE - Planos</h1>
+      <div class="logout-section">
+        <button id="logoutBtn" type="button" class="btn-logout">Sair</button>
+      </div>
+    </header>
+
+    <form class="form" action="javascript:void(0);">
+      <div class="form-group">
+        <label for="placaOrValue" class="label-input">Placa / Valor FIPE:</label>
+        <div class="group-btn-placa">
+          <input type="text" id="placaOrValue" class="input-placa" maxlength="10" />
+          <img
+            src="https://tse1.mm.bing.net/th/id/OIP.xiwBuvR2akVP55WdqsD0cAHaHC?rs=1&pid=ImgDetMain&o=7&rm=3"
+            alt="Ícone de histórico"
+            class="img-historico"
+          />
+        </div>
+      </div>
+
+      <!-- Modal de histórico -->
+      <div class="modalHistorico">
+        <div class="conteudoHistorico">
+          <div class="historico-header">
+            <h2>Históricos</h2>
+            <button type="button" class="fecharHistorico">×</button>
+          </div>
+
+          <div class="historico-content">
+            <div class="stats">
+              <div class="stat-item"><label>Total</label><p id="totalCotacoes">0</p></div>
+              <div class="stat-item"><label>Hoje</label><p id="cotacoesHoje">0</p></div>
+              <div class="stat-item"><label>Semana</label><p id="cotacoesSemana">0</p></div>
+              <div class="stat-item"><label>Mês</label><p id="cotacoesMes">0</p></div>
+              <div class="stat-item"><label>Ano</label><p id="cotacoesAno">0</p></div>
+            </div>
+
+            <input type="text" class="input-buscar" placeholder="Buscar placa..." />
+            <div class="historico-list">
+              <h3>Histórico de Cotações</h3>
+              <div id="listaCotacoes"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group-fipe">
+        <textarea id="dadosFipe" placeholder="Dados FIPE"></textarea>
+        <button type="button" class="btn-blue" id="btnCopiarDadosFipe">
+          <i class="fa-regular fa-copy"></i> Selecionar
+        </button>
+      </div>
+
+      <div class="form-group-check-box">
+        <label><input type="checkbox" data-estado="SP" id="sp" class="checkbox" checked /> SP</label>
+        <label><input type="checkbox" data-estado="MG" id="mg" class="checkbox" /> MG</label>
+        <label><input type="checkbox" data-estado="RJ" id="rj" class="checkbox" /> RJ</label>
+        <label><input type="checkbox" data-estado="SC" id="sc" class="checkbox" /> SC</label>
+        <label><input type="checkbox" data-estado="RS" id="rs" class="checkbox" /> RS</label>
+        <label><input type="checkbox" id="suv" /> SUV</label>
+        <label><input type="checkbox" id="util" /> Utilitário</label>
+      </div>
+
+      <div class="card">
+        <table id="tabelaValores">
+          <thead>
+            <tr>
+              <th>Plano</th>
+              <th>Colisão</th>
+              <th>Entrada</th>
+              <th>Mensal</th>
+              <th>Anual</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Essencial</td>
+              <td id="colisaoEssencial"></td>
+              <td id="primeiraMensalidadeEssencial"></td>
+              <td id="totalEssencial"></td>
+              <td id="totalAnualEssencial"></td>
+            </tr>
+            <tr>
+              <td>Completo</td>
+              <td id="colisaoCompleto"></td>
+              <td id="primeiraMensalidadeCompleto"></td>
+              <td id="totalCompleto"></td>
+              <td id="totalAnualCompleto"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-group-frase">
+        <label for="fraseUnificada" class="label-input">Frase:</label>
+        <textarea id="fraseUnificada" class="frase" placeholder="Frase"></textarea>
+        <button type="button" class="btn-blue" id="btnCopiarFrase">
+          <i class="fa-regular fa-copy"></i> Selecionar
+        </button>
+        <div class="frase-buttons">
+          <button type="button" class="btn-frase" id="btnFraseEssencial">Essencial</button>
+          <button type="button" class="btn-frase" id="btnFraseSemVidro">Sem Vidro</button>
+          <button type="button" class="btn-frase" id="btnFraseCompleto">Completo</button>
+        </div>
+      </div>
+
+      <div class="form-group-check-box">
+        <label><input type="checkbox" id="miza" /> Miza</label>
+        <label><input type="checkbox" id="nicolas" /> Nicolas</label>
+        <label><input type="checkbox" id="sofia" /> Sofia</label>
+      </div>
+
+      <div class="form-group-pdf">
+        <button type="button" id="btnGerarPDFEssencial">Gerar PDF - Essencial</button>
+        <button type="button" id="btnGerarPDFSemVidros">Gerar PDF - Sem Vidros</button>
+        <button type="button" id="btnGerarPDFCompleto">Gerar PDF - Completo</button>
+      </div>
+    </form>
+  </main>
+
+   <script type="module" src="src/frontend/script.js"></script>
+  <script type="module" src="src/frontend/auth2.js"></script>
+</body>
+</html>
