@@ -1,14 +1,10 @@
-import { Auth } from "../backend/FireBaseConfing.js";
+import { auth } from "../firebase/config.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-const isDev = import.meta.env.DEV;
-
-onAuthStateChanged(Auth, (user) => {
+onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.replace("/login.html");
+    window.location.replace("/login");
   } else {
-    console.log("Usuário logado:", user?.email ?? "Nenhum");
-    // Esconder tela de carregamento e mostrar conteúdo principal
     const loadingScreen = document.getElementById("loading-screen");
     const mainContent = document.querySelector(".main");
     if (loadingScreen) loadingScreen.style.display = "none";
@@ -17,10 +13,9 @@ onAuthStateChanged(Auth, (user) => {
 });
 
 function logout() {
-  signOut(Auth)
+  signOut(auth)
     .then(() => {
-      console.log("Usuário deslogado com sucesso");
-      window.location.replace("/login.html");
+      window.location.replace("/login");
     })
     .catch((error) => {
       console.error("Erro ao fazer logout:", error);
