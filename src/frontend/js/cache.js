@@ -104,9 +104,3 @@ export async function loadAllBaseValues(estados = DEFAULT_ESTADOS) {
   }
 }
 
-export async function getOrLoadAllBaseValues(estados = DEFAULT_ESTADOS) {
-  const cached = readBaseValues();
-  if (cached === null) return await loadAllBaseValues(estados);
-  if (Object.keys(cached).length > 0) return cached;
-  return await loadAllBaseValues(estados);
-}

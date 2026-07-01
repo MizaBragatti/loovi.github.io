@@ -20,19 +20,27 @@ export function getCategoriaAgravo(tipoVeiculo) {
   return 'CAT_AGRAVO_VEICULO_LEVE';
 }
 
-const PLANO_PREFIXES = [
-  'ROUBO_FURTO_PT_', 'ROUBO_FURTO_PT_RAST_',
-  'LICIT_ROUBO_FURTO_PT_', 'LICIT_ROUBO_FURTO_PT_RAST_',
-  'ROUBO_FURTO_PT_ANUAL_', 'ROUBO_FURTO_PT_RAST_ANUAL_',
-  'LICIT_ROUBO_FURTO_PT_ANUAL_', 'LICIT_ROUBO_FURTO_PT_RAST_ANUAL_',
-  'TESTE_',
-];
+function planoIdCandidates(estado) {
+  return [
+    'ROUBO_FURTO_PT_' + estado,
+    'ROUBO_FURTO_PT_RAST_' + estado,
+    'ROUBO_FURTO_PT_' + estado.toUpperCase(),
+    'ROUBO_FURTO_PT_RAST_' + estado.toUpperCase(),
+    'LICIT_ROUBO_FURTO_PT_' + estado,
+    'LICIT_ROUBO_FURTO_PT_RAST_' + estado,
+    'LICIT_ROUBO_FURTO_PT_ANUAL_' + estado,
+    'LICIT_ROUBO_FURTO_PT_RAST_ANUAL_' + estado,
+    'TESTE_' + estado,
+    'ROUBO_FURTO_PT_ANUAL_' + estado,
+    'ROUBO_FURTO_PT_RAST_ANUAL_' + estado,
+  ];
+}
 
 export function findPlano(data, estado) {
   const planos = data?.planos ?? data?.data?.planos ?? data;
   if (!Array.isArray(planos)) return null;
-  for (const prefix of PLANO_PREFIXES) {
-    const found = planos.find(p => p.idPlano === prefix + estado);
+  for (const idPlano of planoIdCandidates(estado)) {
+    const found = planos.find(p => p.idPlano === idPlano);
     if (found) return found;
   }
   return null;

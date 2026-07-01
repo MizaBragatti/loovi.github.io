@@ -1,35 +1,20 @@
-import { auth } from "../firebase/config.js";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+const token = localStorage.getItem('idToken');
+console.log('[auth2] idToken no localStorage:', token ? 'presente' : 'AUSENTE');
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.replace("/login");
-  } else {
-    const loadingScreen = document.getElementById("loading-screen");
-    const mainContent = document.querySelector(".main");
-    if (loadingScreen) loadingScreen.style.display = "none";
-    if (mainContent) mainContent.style.display = "block";
-  }
-});
-
-function logout() {
-  signOut(auth)
-    .then(() => {
-      window.location.replace("/login");
-    })
-    .catch((error) => {
-      console.error("Erro ao fazer logout:", error);
-    });
+if (!token) {
+  window.location.replace('/loovi-login');
+} else {
+  const loadingScreen = document.getElementById('loading-screen');
+  const mainContent = document.querySelector('.main');
+  if (loadingScreen) loadingScreen.style.display = 'none';
+  if (mainContent) mainContent.style.display = 'block';
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      logout();
-    });
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    localStorage.removeItem('idToken');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    window.location.replace('/loovi-login');
+  });
 });
-
-window.logout = logout;

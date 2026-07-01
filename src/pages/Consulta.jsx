@@ -1,6 +1,4 @@
-import { useState, useRef } from 'react'
-import { signOut } from 'firebase/auth'
-import { auth } from '../firebase/config'
+import { useState, useRef, useEffect } from 'react'
 import useConsulta from '../hooks/useConsulta'
 import HistoricoModal from '../components/HistoricoModal'
 import { gerarPDF, VENDEDORES } from '../lib/pdfGenerator'
@@ -11,6 +9,12 @@ const VENDEDOR_KEYS = Object.keys(VENDEDORES)
 
 export default function Consulta() {
   const hook = useConsulta()
+
+  useEffect(() => {
+    if (!localStorage.getItem('idToken')) {
+      window.location.replace('/loovi-login')
+    }
+  }, [])
   const [historico, setHistorico] = useState(false)
   const [selectedVendedor, setSelectedVendedor] = useState(null)
   const [selectedPlano, setSelectedPlano] = useState(null)
@@ -83,7 +87,12 @@ export default function Consulta() {
             Histórico
           </button>
           <button
-            onClick={() => signOut(auth)}
+            onClick={() => {
+              localStorage.removeItem('idToken')
+              localStorage.removeItem('accessToken')
+              localStorage.removeItem('refreshToken')
+              window.location.replace('/loovi-login')
+            }}
             className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 transition-colors"
           >
             Sair

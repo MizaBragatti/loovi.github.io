@@ -1,3 +1,5 @@
+import { BRLStringSchema, TipoVeiculoSchema } from './schemas.js';
+
 export function autoResize(textarea) {
   if (!textarea) return;
   try {
@@ -7,29 +9,11 @@ export function autoResize(textarea) {
 }
 
 export function parseBRLToNumber(str) {
-  if (!str) return 0;
-  const cleaned = String(str).replace(/[^(\d|\.|\,|\-)]/g, '').trim();
-  if (!cleaned) return 0;
-  if (cleaned.indexOf('.') > -1 && cleaned.indexOf(',') > -1) {
-    return parseFloat(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
-  }
-  if (cleaned.indexOf(',') > -1) {
-    return parseFloat(cleaned.replace(',', '.')) || 0;
-  }
-  return parseFloat(cleaned) || 0;
+  return BRLStringSchema.parse(str ?? null);
 }
 
 export function getCategoriaAgravo(tipoVeiculo) {
-  if (!tipoVeiculo) return "CAT_AGRAVO_VEICULO_LEVE";
-  const tipo = String(tipoVeiculo).toLowerCase();
-  if (tipo.includes('suv') || tipo.includes('pickup') || tipo.includes('camionete')) {
-    return "CAT_AGRAVO_PICKUP_CAM";
-  }
-  if (tipo.includes('util') || tipo.includes('utilitário') || tipo.includes('utilitario') ||
-    tipo.includes('van') || tipo.includes('furgão') || tipo.includes('furgon')) {
-    return "CAT_AGRAVO_OUTROS";
-  }
-  return "CAT_AGRAVO_VEICULO_LEVE";
+  return TipoVeiculoSchema.parse(tipoVeiculo ?? null);
 }
 
 export function getIndiceAndLooviFipe(valorFipe) {

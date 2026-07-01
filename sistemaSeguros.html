@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Consulta FIPE - Planos | Loovi Seguros</title>
+  <script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="src/frontend/sistemaSeguros.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
-  <div id="loading-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #e3ecf7 100%); font-family: Arial, sans-serif; font-size: 24px; color: #333;">
+  <div id="loading-screen">
     Carregando...
   </div>
 
@@ -18,6 +19,9 @@
     <header class="header">
       <h1>Consulta FIPE - Planos</h1>
       <div class="logout-section">
+        <button id="themeToggleBtn" type="button" class="btn-theme" title="Alternar tema">
+          <i id="themeIcon" class="fa-solid fa-moon"></i>
+        </button>
         <button id="logoutBtn" type="button" class="btn-logout">Sair</button>
       </div>
     </header>
@@ -27,11 +31,9 @@
         <label for="placaOrValue" class="label-input">Placa / Valor FIPE:</label>
         <div class="group-btn-placa">
           <input type="text" id="placaOrValue" class="input-placa" maxlength="10" />
-          <img
-            src="https://tse1.mm.bing.net/th/id/OIP.xiwBuvR2akVP55WdqsD0cAHaHC?rs=1&pid=ImgDetMain&o=7&rm=3"
-            alt="Ícone de histórico"
-            class="img-historico"
-          />
+          <button type="button" class="img-historico" title="Histórico de cotações">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </button>
         </div>
       </div>
 
@@ -62,7 +64,7 @@
       <div class="form-group-fipe">
         <textarea id="dadosFipe" placeholder="Dados FIPE"></textarea>
         <button type="button" class="btn-blue" id="btnCopiarDadosFipe">
-          <i class="fa-regular fa-copy"></i> Selecionar
+          <i class="fa-regular fa-copy"></i> Copiar
         </button>
       </div>
 
@@ -109,9 +111,14 @@
       <div class="form-group-frase">
         <label for="fraseUnificada" class="label-input">Frase:</label>
         <textarea id="fraseUnificada" class="frase" placeholder="Frase"></textarea>
-        <button type="button" class="btn-blue" id="btnCopiarFrase">
-          <i class="fa-regular fa-copy"></i> Selecionar
-        </button>
+        <div class="frase-actions">
+          <button type="button" class="btn-blue" id="btnCopiarFrase">
+            <i class="fa-regular fa-copy"></i> Copiar
+          </button>
+          <button type="button" class="btn-whatsapp" id="btnWhatsapp" title="Enviar pelo WhatsApp">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+          </button>
+        </div>
         <div class="frase-buttons">
           <button type="button" class="btn-frase" id="btnFraseEssencial">Essencial</button>
           <button type="button" class="btn-frase" id="btnFraseSemVidro">Sem Vidro</button>
@@ -132,6 +139,8 @@
       </div>
     </form>
   </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="src/frontend/script.js"></script>
   <script type="module" src="src/frontend/auth2.js"></script>

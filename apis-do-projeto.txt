@@ -1,0 +1,61 @@
+APIs presentes no projeto (Login / Sistema de Seguros - Loovi)
+================================================================
+Gerado em: 01/07/2026
+
+1. API de Autenticação (Login por CPF - executivo)
+   Base URL: https://e2ib2uw05e.execute-api.us-east-1.amazonaws.com/producao/autenticacao/v1
+   Usada em: src/pages/LooviLogin.jsx, src/frontend/js/api-cpf.js
+
+   - GET  {BASE_URL}/executivo/{cpf}
+     -> Busca dados do executivo pelo CPF (nome, contatos, etc.)
+
+   - POST {BASE_URL}/executivo/{cpf}/codigo-por-email
+     -> Solicita envio do código de verificação por e-mail
+
+   - POST {BASE_URL}/executivo/{cpf}/codigo-por-sms
+     -> Solicita envio do código de verificação por SMS
+
+   - POST {BASE_URL}/executivo/{cpf}/verifica-codigo
+     Body: { Sessao, CodigoAutenticacao }
+     -> Verifica o código informado e retorna tokens (IdToken, AccessToken, RefreshToken)
+
+
+2. API de Cotação SAP (Planos por Estado) - versão via proxy AWS
+   URL: https://ticjxjby64.execute-api.us-east-1.amazonaws.com/producao/proxy/v2/SAP
+   Usada em: src/lib/sapApi.js
+   Método: POST (proxy que repassa para o SAP Hana interno, com payload em base64)
+   Header: x-api-key
+   -> Encaminha para: https://sapiis.loovi.com.br:60000/plano/Api/v1/obterPlanosPorEstado/{estado}/app
+
+
+3. API de Cotação SAP (Planos por Estado) - versão direta (com Bearer token)
+   URL: https://pag45vto72.execute-api.us-east-1.amazonaws.com/producao/v1/saphana/plano/Api/v1/obterPlanosPorEstado/{estado}/app
+   Usada em: src/frontend/js/api.js (classe Calcular.buscarCotacaoSAP)
+   Header: Authorization Bearer (idToken do localStorage), requester: Portal
+
+
+4. API de Consulta de Placa (dados FIPE atualizados)
+   URL: https://tsrujo7p82.execute-api.us-east-1.amazonaws.com/producao/placas/v2/dados-atualizados/{placa}
+   Usada em: src/hooks/useConsulta.js, src/frontend/js/ui.js (método buscaPlaca)
+   Método: GET
+   -> Retorna dados como Fipe, Ano, Modelo, Fabricante, TipoVeiculo, CategoriaLoovi
+
+
+5. API2PDF (geração de PDF a partir de HTML)
+   URL: https://v2.api2pdf.com/chrome/pdf/html
+   Usada em: src/frontend/js/pdf.js, src/lib/pdfGenerator.js
+   Método: POST
+   Header: Authorization (API key fixa no código)
+   -> Gera PDF de propostas/cotações e retorna FileUrl
+
+
+6. Escritório Virtual Loovi (scraping / teste)
+   URL: https://escritoriovirtual.loovi.com.br/
+   Usada em: test.js (script usando axios + cheerio para extrair HTML)
+
+
+Observações:
+- As chaves/tokens de API (x-api-key, Authorization) estão hardcoded diretamente no código-fonte,
+  o que representa um risco de segurança (exposição de credenciais no frontend).
+- Os links "https://loovi.com.br/XXXXX" em ui.js e pdfGenerator.js são links de contato/vendedor
+  (WhatsApp/Loovi), não são chamadas de API.

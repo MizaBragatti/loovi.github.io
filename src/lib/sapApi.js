@@ -1,8 +1,7 @@
 const BASE_KEY = 'baseValues';
 const BASE_META_KEY = 'baseValues_meta';
 const BASE_TTL_MS = 24 * 60 * 60 * 1000;
-const SAP_URL = 'https://ticjxjby64.execute-api.us-east-1.amazonaws.com/producao/proxy/v2/SAP';
-const SAP_KEY = 'RRcW9gj2tZ6pSVsnbpmKhshpXC3yR9EklCwqQyh0';
+const SAP_URL = 'https://pag45vto72.execute-api.us-east-1.amazonaws.com/producao/v1/saphana/plano/Api/v1/obterPlanosPorEstado';
 export const DEFAULT_ESTADOS = ['SP', 'MG', 'RJ', 'SC', 'RS'];
 
 function readCache() {
@@ -17,21 +16,20 @@ function isCacheFresh() {
 }
 
 export async function buscarCotacaoSAP(estado) {
-  const payload = JSON.stringify({
-    url: `https://sapiis.loovi.com.br:60000/plano/Api/v1/obterPlanosPorEstado/${estado.toUpperCase()}/app`,
-    metodo: 'GET',
-    headers: { requester: 'Portal', cotacao: '' },
-    body: {},
-  });
-  const resp = await fetch(SAP_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': SAP_KEY },
-    body: JSON.stringify(btoa(payload)),
+  const token = localStorage.getItem('idToken');
+  const resp = await fetch(`${SAP_URL}/${estado.toUpperCase()}/app?_ts=${Date.now()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      requester: 'Portal',
+      Accept: 'application/json',
+    },
   });
   const data = await resp.json();
+  if (data?.Erro) throw new Error(data.Erro);
   if (data?.mensagem) throw new Error(data.mensagem);
-  const str = typeof data === 'string' ? atob(data) : '';
-  return str ? JSON.parse(str) : data;
+  if (data?.message) throw new Error(data.message);
+  if (!resp.ok) throw new Error(`Falha ao consultar SAP (${resp.status})`);
+  return data;
 }
 
 export async function loadAllBaseValues(estados = DEFAULT_ESTADOS) {

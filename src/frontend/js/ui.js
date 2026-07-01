@@ -3,6 +3,7 @@ import { kl } from './planService.js';
 import { autoResize, parseBRLToNumber, getCategoriaAgravo, getIndiceAndLooviFipe } from './utils.js';
 import { loadCounters, incrementCounters } from './counters.js';
 import { getBaseDataForEstado } from './cache.js';
+import { UserInputSchema } from './schemas.js';
 
 export class Ui extends Calcular {
   constructor() {
@@ -486,24 +487,6 @@ export class Ui extends Calcular {
     document.getElementById('cotacoesAno').textContent = counters.ano;
   }
 
-  getStats() {
-    const quotes = JSON.parse(localStorage.getItem('quotes')) || [];
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    return {
-      total: quotes.length,
-      today: quotes.filter(q => new Date(q.timestamp) >= startOfDay).length,
-      week:  quotes.filter(q => new Date(q.timestamp) >= startOfWeek).length,
-      month: quotes.filter(q => new Date(q.timestamp) >= startOfMonth).length,
-      year:  quotes.filter(q => new Date(q.timestamp) >= startOfYear).length
-    };
-  }
-
   checkboxData() {
     this.checkboxes.forEach(checkboxNow => {
       checkboxNow.addEventListener('change', async () => {
@@ -535,28 +518,13 @@ export class Ui extends Calcular {
     });
   }
 
-  normalizePlate(value) {
-    return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  }
-
-  regexInput(inputValue) {
-    return /^[A-Z]{3}[-\s]?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/i.test(inputValue);
-  }
-
   checkValue() {
     const inputValue = this.inputField.value.trim();
-    if (inputValue === "") {
+    if (!inputValue) {
       this.clearTableValues();
-      return { type: "vazio", value: "" };
+      return { type: 'vazio', value: '' };
     }
-    if (this.regexInput(inputValue)) {
-      return { type: "placa", value: this.normalizePlate(inputValue) };
-    }
-    const numericValue = parseInt(inputValue.replace(/\D/g, ""), 10);
-    if (!isNaN(numericValue)) {
-      return { type: "fipe", value: this.formatBRL(numericValue) };
-    }
-    return { type: "inválido", value: inputValue };
+    return UserInputSchema.parse(inputValue);
   }
 
   async checkPlate() {
@@ -593,7 +561,7 @@ export class Ui extends Calcular {
 
       case "fipe":
         this.inputField.classList.add('processing');
-        this.valorFipe = parseFloat(result.value.replace(/[^\d,]/g, "").replace(",", "."));
+        this.valorFipe = result.value;
         this.dadosFipeField.value = `Valor FIPE: R$ ${this.valorFipe.toFixed(2).replace('.', ',')}`;
         this.autoResizeTextarea(this.dadosFipeField);
         try {
@@ -727,16 +695,49 @@ export class Ui extends Calcular {
     }
   }
 
+  showToast(message) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  async copyToClipboard(textareaId, btnId) {
+    const text = document.getElementById(textareaId)?.value?.trim();
+    if (!text) { this.showToast('Nada para copiar'); return; }
+
+    const btn = document.getElementById(btnId);
+    const icon = btn?.querySelector('i');
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.getElementById(textareaId);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+
+    this.showToast('Copiado!');
+    if (icon) {
+      icon.className = 'fa-solid fa-check';
+      setTimeout(() => { icon.className = 'fa-regular fa-copy'; }, 1800);
+    }
+  }
+
   attachCopyListeners() {
-    document.getElementById('btnCopiarDadosFipe').addEventListener('click', () => {
-      const textarea = document.getElementById('dadosFipe');
-      textarea.focus();
-      textarea.select();
-    });
-    document.getElementById('btnCopiarFrase').addEventListener('click', () => {
-      const textarea = document.getElementById('fraseUnificada');
-      textarea.focus();
-      textarea.select();
+    document.getElementById('btnCopiarDadosFipe')?.addEventListener('click', () =>
+      this.copyToClipboard('dadosFipe', 'btnCopiarDadosFipe')
+    );
+    document.getElementById('btnCopiarFrase')?.addEventListener('click', () =>
+      this.copyToClipboard('fraseUnificada', 'btnCopiarFrase')
+    );
+    document.getElementById('btnWhatsapp')?.addEventListener('click', () => {
+      const text = document.getElementById('fraseUnificada')?.value?.trim();
+      if (!text) { this.showToast('Selecione um plano primeiro'); return; }
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     });
   }
 
