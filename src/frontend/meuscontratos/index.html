@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes Loovi</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body class="meuscontratos-root">
+    <div class="container">
+        <header>
+            <h1>📊 Gestão de Clientes Loovi</h1>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalClientes">0</div>
+                    <div class="stat-label">Total de Clientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalAdimplentes">0</div>
+                    <div class="stat-label">Adimplentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalInadimplentes">0</div>
+                    <div class="stat-label">Inadimplentes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalAtivos">0</div>
+                    <div class="stat-label">Ativos</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar por nome, CPF, e-mail ou placa...">
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="todos">Todos</button>
+                <button class="filter-btn" data-filter="adimplente">Adimplentes</button>
+                <button class="filter-btn" data-filter="inadimplente">Inadimplentes</button>
+                <button class="filter-btn" data-filter="ativos">Ativos</button>
+                <button class="filter-btn" data-filter="cancelados">Cancelados</button>
+            </div>
+        </div>
+
+        <div class="clients-grid" id="clientsGrid"></div>
+    </div>
+
+    <script src="clientes.json" type="application/json" id="clientesJson"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>

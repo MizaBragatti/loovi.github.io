@@ -2,11 +2,34 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getBaseDataForEstado } from '../lib/sapApi';
 import { findPlano, computeMensalidades, buildFrases, getCategoriaAgravo, parseBRLToNumber } from '../lib/calculations';
 import { saveQuote } from '../lib/history';
+import { endExpiredSession, getActiveAuthToken, SESSION_EXPIRED_MESSAGE } from '../lib/authSession';
 
-const PLATE_URL = 'https://tsrujo7p82.execute-api.us-east-1.amazonaws.com/producao/placas/v2/dados-atualizados/';
+const PLATE_URL = 'http://localhost:8787/api/veiculos/placas/';
+
 const PLATE_RE = /^[A-Z]{3}[-\s]?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/i;
 
 function normPlate(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && String(value).trim() !== '') return value;
+  }
+  return undefined;
+}
+
+// Normaliza a resposta de /api/veiculos/placas/{placa}, tolerando variações de shape/caixa.
+function extractPlacaData(raw) {
+  const data = raw?.data ?? raw?.Data ?? raw?.veiculo ?? raw?.Veiculo ?? raw ?? {};
+  const fipe = data?.Fipe ?? data?.fipe ?? data;
+  const valorFipe = firstNonEmpty(fipe?.Valor, fipe?.valor, data?.ValorFipe, data?.valorFipe);
+  return {
+    valor: valorFipe,
+    ano: firstNonEmpty(data?.Ano, data?.ano),
+    modelo: firstNonEmpty(data?.Modelo, data?.modelo),
+    fabricante: firstNonEmpty(data?.Fabricante, data?.fabricante, data?.Marca, data?.marca),
+    tipoVeiculo: firstNonEmpty(data?.CategoriaLoovi, data?.categoriaLoovi, data?.TipoVeiculo, data?.tipoVeiculo, data?.TipoVeculo),
+  };
+}
 
 export default function useConsulta() {
   const [input, setInput] = useState('');
@@ -21,6 +44,8 @@ export default function useConsulta() {
   const [error, setError] = useState('');
   const vehicleRef = useRef({ valorFipe: 0, tipoVeiculo: null, modelo: null, placa: null });
   const debounceRef = useRef(null);
+  const latestRef = useRef({ estado, isSUV, isUtil });
+  latestRef.current = { estado, isSUV, isUtil };
 
   const calcular = useCallback(async (valorFipe, tipoVeiculo, estadoTarget, suvOverride, utilOverride) => {
     if (!valorFipe || valorFipe <= 0 || !estadoTarget) return;
@@ -32,19 +57,21 @@ export default function useConsulta() {
       if (!plano) throw new Error(`Plano não encontrado para ${estadoTarget}`);
 
       let cat = getCategoriaAgravo(tipoVeiculo);
-      if (suvOverride) cat = 'CAT_AGRAVO_PICKUP_CAM';
-      else if (utilOverride) cat = 'CAT_AGRAVO_OUTROS';
-      const isSUVFinal = cat === 'CAT_AGRAVO_PICKUP_CAM';
+      let isSUVFinal = cat === 'CAT_AGRAVO_PICKUP_CAM';
+      if (suvOverride) { cat = 'CAT_AGRAVO_PICKUP_CAM'; isSUVFinal = true; }
+      else if (utilOverride) { cat = 'CAT_AGRAVO_OUTROS'; isSUVFinal = true; }
 
       const res = computeMensalidades(plano, valorFipe, cat, isSUVFinal);
       setResultado(res);
       setFrases(buildFrases(res));
       setStatus('success');
+      const { placa, modelo } = vehicleRef.current;
+      saveQuote({ estado: estadoTarget, tipoVeiculo, modelo, valorFipe, vendedor }, placa);
     } catch (e) {
       setError('Erro ao calcular: ' + (e.message ?? 'Erro desconhecido'));
       setStatus('error');
     }
-  }, []);
+  }, [vendedor]);
 
   const processar = useCallback(async (rawInput, estadoTarget, suvOverride, utilOverride) => {
     const v = rawInput.trim();
@@ -55,18 +82,36 @@ export default function useConsulta() {
       setStatus('loading');
       setFipeText('Buscando dados da placa...');
       try {
-        const resp = await fetch(PLATE_URL + placa);
-        if (!resp.ok) throw new Error('Placa não encontrada');
-        const data = await resp.json();
-        if (!data?.Fipe) throw new Error('Dados FIPE não disponíveis');
-        const valorFipe = parseBRLToNumber(data.Fipe.Valor);
-        const tipoVeiculo = data.CategoriaLoovi ?? data.TipoVeiculo ?? data.TipoVeculo;
-        const modelo = data.Modelo;
+       const token = getActiveAuthToken();
+       if (!token) {
+         endExpiredSession();
+         throw new Error(SESSION_EXPIRED_MESSAGE);
+       }
+const resp = await fetch(PLATE_URL + placa, {
+  headers: {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  }
+});
+
+if (resp.status === 401 || resp.status === 403) {
+  endExpiredSession();
+  throw new Error(SESSION_EXPIRED_MESSAGE);
+}
+if (resp.status === 404) throw new Error('Placa não encontrada.');
+if (!resp.ok) throw new Error('Erro na consulta.');
+
+        const raw = await resp.json();
+        const parsed = extractPlacaData(raw);
+        if (!parsed.valor) throw new Error('Dados FIPE não disponíveis');
+        const valorFipe = parseBRLToNumber(parsed.valor);
+        const tipoVeiculo = parsed.tipoVeiculo;
+        const modelo = parsed.modelo;
         vehicleRef.current = { valorFipe, tipoVeiculo, modelo, placa };
         setFipeText([
-          `Ano: ${data.Ano}`,
+          `Ano: ${parsed.ano}`,
           `Modelo: ${modelo}`,
-          `Fabricante: ${data.Fabricante}`,
+          `Fabricante: ${parsed.fabricante}`,
           `Tipo Veículo: ${tipoVeiculo ?? '—'}`,
           `Valor FIPE: R$ ${valorFipe.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         ].join('\n'));
@@ -75,7 +120,6 @@ export default function useConsulta() {
           setStatus('success');
         } else {
           await calcular(valorFipe, tipoVeiculo, estadoTarget, suvOverride, utilOverride);
-          saveQuote({ estado: estadoTarget, tipoVeiculo, modelo, valorFipe, vendedor }, placa);
         }
       } catch (e) {
         setFipeText('Erro ao buscar placa. Verifique se está correta.');
@@ -101,9 +145,10 @@ export default function useConsulta() {
     setInput(val.toUpperCase());
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      processar(val.toUpperCase(), estado, isSUV, isUtil);
+      const { estado: estadoAtual, isSUV: suvAtual, isUtil: utilAtual } = latestRef.current;
+      processar(val.toUpperCase(), estadoAtual, suvAtual, utilAtual);
     }, 500);
-  }, [processar, estado, isSUV, isUtil]);
+  }, [processar]);
 
   const handleEnter = useCallback(() => {
     clearTimeout(debounceRef.current);
@@ -111,10 +156,17 @@ export default function useConsulta() {
   }, [processar, input, estado, isSUV, isUtil]);
 
   useEffect(() => {
-    if (vehicleRef.current.valorFipe > 0 && estado) {
+    if (!estado) {
+      setResultado(null);
+      setFrases(null);
+      return;
+    }
+    if (vehicleRef.current.valorFipe > 0) {
       calcular(vehicleRef.current.valorFipe, vehicleRef.current.tipoVeiculo, estado, isSUV, isUtil);
     }
   }, [estado, isSUV, isUtil, calcular]);
+
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const toggleSUV = () => { setIsSUV(p => !p); if (!isSUV) setIsUtil(false); };
   const toggleUtil = () => { setIsUtil(p => !p); if (!isUtil) setIsSUV(false); };

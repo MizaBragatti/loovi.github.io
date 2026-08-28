@@ -82,7 +82,7 @@ function calcularValorColisao(plano, indice) {
 
   const comColisao = fromLoovi('SRV_FIPE_COM_COLISAO');
   const semColisao = fromLoovi('SRV_FIPE_SEM_COLISAO');
-  colisao += comColisao > semColisao ? (comColisao - semColisao) : -(semColisao - comColisao);
+  colisao += comColisao - semColisao;
   colisao += lti?.preco ?? 0;
 
   return parseFloat(colisao.toFixed(2));
@@ -98,11 +98,15 @@ export function computeMensalidades(plano, valorFipe, categoriaAgravo, isSUV) {
   const colisao = calcularValorColisao(plano, indice);
   const ativacao = 299.90;
 
-  const mk = (base) => ({
-    mensal: parseFloat(base.toFixed(2)),
-    primeira: parseFloat((base + ativacao).toFixed(2)),
-    anual: parseFloat(((base * 12) + ativacao).toFixed(2)),
-  });
+  const mk = (base) => {
+    const anual = parseFloat(((base * 12) + ativacao).toFixed(2));
+    return {
+      mensal: parseFloat(base.toFixed(2)),
+      primeira: parseFloat((base + ativacao).toFixed(2)),
+      anual,
+      parcela: parseFloat((anual / 12).toFixed(2)),
+    };
+  };
 
   return {
     essencial: { ...mk(mensal), colisao: 0 },
@@ -115,9 +119,9 @@ export function buildFrases(res) {
   const f = formatBRL;
   const { essencial, semVidro, completo } = res;
   return {
-    essencial: `Seguro Essencial no Plano Anual é de ${f(essencial.anual)} em até 12x sem juros de ${f(essencial.mensal)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(essencial.primeira)} no cartão de crédito + mensais sem juros de ${f(essencial.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
-    semVidro: `Seguro Completo sem Vidros no Plano Anual é de ${f(semVidro.anual)} em até 12x sem juros de ${f(semVidro.mensal)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(semVidro.primeira)} no cartão de crédito + mensais sem juros de ${f(semVidro.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
-    completo: `Seguro Completo com Colisão e Opcional Vidros (faróis, lanternas e retrovisores) no Plano Anual é de ${f(completo.anual)} em até 12x sem juros de ${f(completo.mensal)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(completo.primeira)} no cartão de crédito + mensais sem juros de ${f(completo.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
+    essencial: `Seguro Essencial no Plano Anual é de ${f(essencial.anual)} em até 12x sem juros de ${f(essencial.parcela)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(essencial.primeira)} no cartão de crédito + mensais sem juros de ${f(essencial.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
+    semVidro: `Seguro Completo sem Vidros no Plano Anual é de ${f(semVidro.anual)} em até 12x sem juros de ${f(semVidro.parcela)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(semVidro.primeira)} no cartão de crédito + mensais sem juros de ${f(semVidro.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
+    completo: `Seguro Completo com Colisão e Opcional Vidros (faróis, lanternas e retrovisores) no Plano Anual é de ${f(completo.anual)} em até 12x sem juros de ${f(completo.parcela)} no cartão de crédito. Já no Plano Recorrente Mensal o Valor da entrada é de ${f(completo.primeira)} no cartão de crédito + mensais sem juros de ${f(completo.mensal)} debitando mês a mês no cartão de crédito sem comprometer o valor total do Seguro no limite do seu cartão.`,
   };
 }
 

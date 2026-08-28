@@ -25,3 +25,8 @@ dist-ssr
 
 # Environment variables
 .env
+
+# Claude Code tool caches
+.agents/
+.claude/skills/
+skills-lock.json

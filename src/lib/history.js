@@ -52,7 +52,9 @@ export function loadQuotes() {
 
 export function saveQuote(quote, placa) {
   const quotes = loadQuotes();
-  const idx = quotes.findIndex(q => q.placa === placa);
+  const idx = placa
+    ? quotes.findIndex(q => q.placa === placa)
+    : quotes.findIndex(q => !q.placa && q.valorFipe === quote.valorFipe && q.estado === quote.estado);
   const entry = { ...quote, placa, timestamp: Date.now() };
   if (idx !== -1) {
     quotes[idx] = { ...quotes[idx], ...entry };
