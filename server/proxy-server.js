@@ -5,6 +5,22 @@ import https from 'node:https'
 
 const PORT = process.env.PORT || 8787
 const MAX_BODY_BYTES = 1024 * 1024
+const SELF_PING_INTERVAL_MS = 10 * 60 * 1000 // 10 minutos, < 15 min de inatividade do Render Free
+
+function startSelfPing() {
+  const externalUrl = process.env.RENDER_EXTERNAL_URL
+  if (!externalUrl) return // só roda quando implantado no Render (env var injetada por eles)
+
+  setInterval(() => {
+    https
+      .get(`${externalUrl}/health`, (res) => {
+        res.resume() // drena a resposta, não precisamos do corpo
+      })
+      .on('error', (err) => console.error('[proxy] self-ping falhou:', err.message))
+  }, SELF_PING_INTERVAL_MS)
+
+  console.log(`[proxy] self-ping ativo a cada ${SELF_PING_INTERVAL_MS / 60000} min -> ${externalUrl}/health`)
+}
 
 const ALLOWED_ORIGINS = new Set([
   'https://sistema-de-seguros-loovi.web.app',
@@ -92,6 +108,12 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' })
+    res.end('ok')
+    return
+  }
+
   let body = null
   if (req.method === 'POST') {
     try {
@@ -148,6 +170,13 @@ const server = http.createServer(async (req, res) => {
     console.log(`[proxy] SAP CONTRATO -> https://${targetHost}${targetPath}`)
   }
 
+  // Dados cadastrais do executivo/vendedor (nome/email/telefone reais) via proxy local.
+  else if (req.url.startsWith('/api/proxy/api/sap-parceiro/executivo/portal/')) {
+    targetHost = 'api-gateway.loovi.app.br'
+    targetPath = req.url.slice('/api/proxy'.length)
+    console.log(`[proxy] SAP EXECUTIVO -> https://${targetHost}${targetPath}`)
+  }
+
   // Rota não existente
   else {
     console.warn(`[proxy] rota não encontrada: ${req.method} ${req.url}`)
@@ -170,4 +199,7 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.on('error', (err) => console.error('[proxy] erro no servidor:', err))
-server.listen(PORT, () => console.log(`[proxy] rodando em http://localhost:${PORT}`))
+server.listen(PORT, () => {
+  console.log(`[proxy] rodando em http://localhost:${PORT}`)
+  startSelfPing()
+})
