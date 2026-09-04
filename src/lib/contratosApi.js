@@ -1,8 +1,14 @@
 import { parseJwt } from './jwt'
 import { endExpiredSession, SESSION_EXPIRED_MESSAGE } from './authSession'
 
-const CONTRATOS_BASE_URL = 'http://localhost:8787/api/proxy/api/sap-contrato/ativos'
-const VENDEDOR_BASE_URL = 'https://pag45vto72.execute-api.us-east-1.amazonaws.com/producao/v1/saphana/crm/Api/v1/ObterVendedor'
+// Contratos agora vêm do nosso próprio backend (server/loovi-api), que persiste
+// os dados ingeridos da Loovi - em vez de bater direto na Loovi a cada busca
+// via proxy. A API exige o mesmo Bearer token de sessão (validado via JWKS).
+const CONTRATOS_BASE_URL = `${import.meta.env.VITE_LOOVI_API_URL || 'http://localhost:3000'}/contratos`
+// Endpoint real usado pelo portal (escritoriovirtual.loovi.com.br) para os dados
+// cadastrais do executivo - devolve o nome real (ex: "nomeCliente"), diferente
+// do endpoint antigo ObterVendedor (pag45vto72...) que não trazia o nome.
+const VENDEDOR_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/sap-parceiro/executivo/portal`
 
 function toDateParam(unixSeconds) {
   return new Date(unixSeconds * 1000).toISOString().slice(0, 10)
@@ -46,14 +52,11 @@ async function fetchContratosPage(codigoVendedor, token, { dataInicio, dataFim, 
     slp: String(codigoVendedor).trim(),
     startDateFrom: toDateParam(inicio),
     startDateTo: toDateParam(fim),
-    apenasVigentes: 'false',
-    incluirItens: 'true',
     take: '100',
   })
   if (cursor) params.set('cursor', cursor)
   const url = `${CONTRATOS_BASE_URL}?${params.toString()}&_ts=${Date.now()}`
   const headers = {
-    requester: 'Portal',
     Accept: 'application/json',
   }
 
@@ -91,14 +94,30 @@ async function fetchContratosPage(codigoVendedor, token, { dataInicio, dataFim, 
 
 // A API pagina por cursor (data.nextCursor); segue as páginas até esgotar
 // para não perder contratos quando um período tem mais de 100 itens.
+const MAX_PAGINAS_CONTRATOS = 200 // 200 páginas x take=100 = até 20.000 contratos; além disso é sinal de loop/bug da API.
+
 export async function fetchContratos(codigoVendedor, token, { dataInicio, dataFim } = {}) {
   let cursor = null
+  const cursoresVistos = new Set()
   const itens = []
+  let paginas = 0
 
   do {
     const page = await fetchContratosPage(codigoVendedor, token, { dataInicio, dataFim, cursor })
     itens.push(...extractListaContratos(page))
-    cursor = page?.data?.nextCursor ?? null
+    paginas += 1
+
+    const nextCursor = page?.data?.nextCursor ?? null
+    if (!nextCursor) break
+
+    // Cobre tanto a API repetindo o mesmo cursor quanto um ciclo (A -> B -> A).
+    if (cursoresVistos.has(nextCursor) || paginas >= MAX_PAGINAS_CONTRATOS) {
+      console.warn('[contratos] cursor não avança (repetido ou ciclo detectado), interrompendo paginação.')
+      break
+    }
+
+    cursoresVistos.add(nextCursor)
+    cursor = nextCursor
   } while (cursor)
 
   return itens

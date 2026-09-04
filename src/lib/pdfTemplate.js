@@ -150,9 +150,12 @@ export const htmlDadosPlanoFim = "</div>";
 // vendedor por parâmetro em vez de ler variáveis globais (nome/email/tel/telFormatado/link).
 export function montarHtmlBaixo(vendedor) {
   const v = vendedor || {};
-  const nome = v.nome || '';
+  const nome = v.nome || 'Executivo Loovi';
   const email = v.email || '';
-  const tel = v.tel || '';
+  // v.tel pode já vir com o DDI 55 embutido (13 dígitos), dependendo da origem
+  // do cadastro; remove para não duplicar ao montar o link https://wa.me/55+tel.
+  const telDigits = String(v.tel || '').replace(/\D/g, '');
+  const tel = telDigits.length > 11 && telDigits.startsWith('55') ? telDigits.slice(2) : telDigits;
   const telFormatado = v.telFormatado || '';
 
   return "<div _ngcontent-ng-c2012710688=\"\" class=\"valor-assinatura-recorrente\">\r\n" +

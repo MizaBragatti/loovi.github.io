@@ -4,7 +4,7 @@ import { parseJwt } from './jwt';
 const BASE_KEY = 'baseValues';
 const BASE_META_KEY = 'baseValues_meta';
 const BASE_TTL_MS = 24 * 60 * 60 * 1000;
-const SAP_URL = 'http://localhost:8787/api/proxy/api/sap-cotacao/planos/catalogo';
+const SAP_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/sap-cotacao/planos/catalogo`;
 export const DEFAULT_ESTADOS = ['SP', 'MG', 'RJ', 'SC', 'RS'];
 
 function readCache() {

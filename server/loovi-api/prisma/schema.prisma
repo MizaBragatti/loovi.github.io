@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Contrato {
+  id                  Int      @id @default(autoincrement())
+  agreementNo         Int      @unique
+  contratoNatural     String
+  bpCode              String
+  bpName              String
+  startDate           DateTime
+  endDate             DateTime
+  status              String
+  slp                 String
+  dataInicioVigencia  DateTime
+  dataFimVigencia     DateTime
+  idIndicacao         String?
+  idIndicacaoAfiliado String?
+  placa               String?
+  dataCancelamento    DateTime?
+  telefone            String?
+  email               String?
+  linkApolice         String?
+  inDebito            Boolean
+  garantiaAtiva       Boolean
+  valorRecorrencia    Decimal
+  tipoPagamento       String
+
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+}

@@ -6,12 +6,17 @@ import { gerarPDF } from '../lib/pdf'
 import { formatBRL } from '../lib/calculations'
 import { parseJwt } from '../lib/jwt'
 import { fetchVendedorInfo, getCodigoVendedorFromToken } from '../lib/contratosApi'
-import { endExpiredSession, getActiveAuthToken, hasActiveSession } from '../lib/authSession'
+import { endExpiredSession, getActiveAuthToken, getActiveContractsToken, hasActiveSession } from '../lib/authSession'
 
 const ESTADOS = ['SP', 'MG', 'RJ', 'SC', 'RS']
 
 function normalizePhone(digitsOnly) {
-  const digits = String(digitsOnly ?? '').replace(/\D/g, '')
+  let digits = String(digitsOnly ?? '').replace(/\D/g, '')
+  // Alguns registros já vêm com o DDI 55 embutido (12/13 dígitos); remove para
+  // não duplicar o DDI ao montar o link https://wa.me/55+tel.
+  if (digits.length > 11 && digits.startsWith('55')) {
+    digits = digits.slice(2)
+  }
   if (!digits) return { tel: '', telFormatado: '' }
 
   if (digits.length < 10) {
@@ -21,14 +26,14 @@ function normalizePhone(digitsOnly) {
   if (digits.length === 11) {
     return {
       tel: digits,
-      telFormatado: `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`,
+      telFormatado: `+55 ${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`,
     }
   }
 
   if (digits.length === 10) {
     return {
       tel: digits,
-      telFormatado: `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`,
+      telFormatado: `+55 ${digits.slice(0, 2)} ${digits.slice(2, 6)}-${digits.slice(6)}`,
     }
   }
 
@@ -226,7 +231,10 @@ export default function Consulta() {
     const codigoVendedor = getCodigoVendedorFromToken(apiToken) ?? getCodigoVendedorFromToken(idToken)
     if (!codigoVendedor) return
 
-    fetchVendedorInfo(codigoVendedor, apiToken)
+    // ObterVendedor é servida pelo mesmo API Gateway SAP das demais rotas
+    // (sap-cotacao/sap-contrato), que autoriza pelo access token, não pelo idToken.
+    const vendedorToken = getActiveContractsToken() ?? apiToken
+    fetchVendedorInfo(codigoVendedor, vendedorToken)
       .then(data => {
         const apiProfile = buildProfileFromVendedorApi(data)
         const withApi = mergeProfile(storageProfile, tokenProfile, apiProfile)

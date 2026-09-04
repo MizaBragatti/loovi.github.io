@@ -4,10 +4,9 @@ import carImg from '../assets/loovi/car.webp'
 import lineImg from '../assets/loovi/line.svg'
 import logoImg from '../assets/loovi/logo.svg'
 
-import { getCodigoVendedorFromToken, fetchContratos } from '../lib/contratosApi'
 import { parseJwt } from '../lib/jwt'
 
-const SSO_BASE_URL = 'http://localhost:8787/api/proxy/api/auth/otp'
+const SSO_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/auth/otp`
 
 const SSO_TIPO = 'executivos'
 const SSO_CLIENT_ID = 'portal-executivos'
@@ -641,33 +640,6 @@ async function verifyCode(cpf, codigo) {
   return res.json()
 }
 
-async function logVendedorEContratos(idToken, accessToken) {
-  try {
-    const codigoVendedor =
-      getCodigoVendedorFromToken(idToken)
-
-    if (!codigoVendedor) {
-      console.warn(
-        '[login] custom:slp não encontrado no token'
-      )
-
-      return
-    }
-
-    await fetchContratos(
-      codigoVendedor,
-      // O access token contém os escopos/audience das APIs de contratos.
-      // Mantém o id token apenas para respostas legadas que não o retornem.
-      accessToken || idToken
-    )
-  } catch (err) {
-    console.error(
-      '[login] erro ao buscar contratos:',
-      err?.message
-    )
-  }
-}
-
 function LoginLayout({ children }) {
   return (
     <section
@@ -1250,11 +1222,6 @@ function StepCode({
       }
 
       success = true
-
-      logVendedorEContratos(
-        idToken,
-        accessToken
-      )
 
     } catch (err) {
       console.error(

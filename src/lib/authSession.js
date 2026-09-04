@@ -2,9 +2,7 @@ import { parseJwt } from './jwt'
 
 export const SESSION_EXPIRED_MESSAGE = 'Sua sessão expirou. Faça login novamente.'
 
-// Acesso temporariamente aberto para validação do portal. Reverter para false
-// quando o login voltar a ser obrigatório.
-export const TEMPORARY_PUBLIC_ACCESS = true
+export const TEMPORARY_PUBLIC_ACCESS = false
 
 const SESSION_KEYS = ['idToken', 'accessToken', 'refreshToken', 'executivoProfile']
 

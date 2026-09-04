@@ -4,7 +4,7 @@ import { findPlano, computeMensalidades, buildFrases, getCategoriaAgravo, parseB
 import { saveQuote } from '../lib/history';
 import { endExpiredSession, getActiveAuthToken, SESSION_EXPIRED_MESSAGE } from '../lib/authSession';
 
-const PLATE_URL = 'http://localhost:8787/api/veiculos/placas/';
+const PLATE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/veiculos/placas/`;
 
 const PLATE_RE = /^[A-Z]{3}[-\s]?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/i;
 

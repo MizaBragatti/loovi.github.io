@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../frontend/meuscontratos/style.css";
 import { fetchContratos, getCodigoVendedorFromToken, extractListaContratos } from "../lib/contratosApi";
@@ -103,20 +103,6 @@ function mergeContracts(existing, incoming) {
   existing.forEach((item) => map.set(getContractKey(item), item));
   incoming.forEach((item) => map.set(getContractKey(item), item));
   return Array.from(map.values());
-}
-
-function splitRangeByDays(start, end, chunkDays = 31) {
-  const chunks = [];
-  const chunkSize = chunkDays * 24 * 60 * 60;
-  let cursor = start;
-
-  while (cursor <= end) {
-    const chunkEnd = Math.min(cursor + chunkSize - 1, end);
-    chunks.push({ start: cursor, end: chunkEnd });
-    cursor = chunkEnd + 1;
-  }
-
-  return chunks;
 }
 
 function loadStoredContracts(codigoVendedor) {
@@ -232,18 +218,44 @@ function matchClienteSearch(cliente, termoBruto) {
   return matchTexto || matchDigitos || matchPlaca;
 }
 
+// Perfil do vendedor logado (nome/email/telefone), já resolvido e cacheado
+// pelo Consulta.jsx ao entrar no portal - aqui só lemos o cache.
+function getExecutivoProfileAtual() {
+  try {
+    const raw = localStorage.getItem("executivoProfile");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      nome: parsed.nome || "",
+      email: parsed.email || "",
+      telFormatado: parsed.telFormatado || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function MeusContratos() {
   const navigate = useNavigate();
+  const [executivoProfile] = useState(getExecutivoProfileAtual);
   const [clientesData, setClientesData] = useState([]);
   const [filtroAtual, setFiltroAtual] = useState("todos");
   const [searchInput, setSearchInput] = useState("");
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
+  // Prefeenchido com o código do vendedor logado, mas editável - permite
+  // buscar contratos de qualquer código de vendedor, não só o do usuário atual.
+  const [codigoVendedorInput, setCodigoVendedorInput] = useState(() => getCodigoVendedorAtual() || "");
   const [periodoInicioText, setPeriodoInicioText] = useState("");
   const [periodoFimText, setPeriodoFimText] = useState("");
   const [storedRange, setStoredRange] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  // Ref (síncrono) em vez de depender só do estado `loading`: um duplo clique
+  // rápido dispara o handler duas vezes antes do React re-renderizar o botão
+  // com disabled=true, iniciando duas buscas paralelas do zero (cursor null).
+  const fetchLockRef = useRef(false);
 
   useEffect(() => {
     if (!hasActiveSession()) {
@@ -313,6 +325,9 @@ export default function MeusContratos() {
       return false;
     }
 
+    if (fetchLockRef.current) return false;
+    fetchLockRef.current = true;
+
     setLoading(true);
     setStatusMessage("");
     try {
@@ -341,58 +356,16 @@ export default function MeusContratos() {
       return false;
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function fetchAndSaveChunkedRange({ codigoVendedor, token, dataInicio, dataFim, chunkDays = 31 }) {
-    if (dataInicio > dataFim) {
-      setStatusMessage("Período inválido. A data inicial não pode ser posterior à final.");
-      return false;
-    }
-
-    const chunks = splitRangeByDays(dataInicio, dataFim, chunkDays);
-    if (!chunks.length) {
-      setStatusMessage("Período inválido para consulta.");
-      return false;
-    }
-
-    setLoading(true);
-    setStatusMessage(`Período longo detectado. Buscando contratos em ${chunks.length} lote(s)...`);
-
-    try {
-      let acumulado = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        setStatusMessage(`Buscando lote ${i + 1}/${chunks.length}...`);
-        const response = await fetchContratos(codigoVendedor, token, {
-          dataInicio: chunk.start,
-          dataFim: chunk.end,
-        });
-        const lista = extractListaContratos(response) || [];
-        acumulado = mergeContracts(acumulado, lista);
-      }
-
-      const finalRange = { start: dataInicio, end: dataFim };
-      saveStoredContracts(codigoVendedor, acumulado, finalRange);
-      setClientesData(acumulado);
-      setStoredRange(finalRange);
-      setStatusMessage(`Busca concluída com sucesso. ${acumulado.length} contrato(s) carregado(s).`);
-      return true;
-    } catch (error) {
-      setStatusMessage(`Erro ao buscar contratos: ${error.message}`);
-      return false;
-    } finally {
-      setLoading(false);
+      fetchLockRef.current = false;
     }
   }
 
   async function handleAtualizar() {
     const token = getAuthTokenAtual();
-    const codigoVendedor = getCodigoVendedorAtual();
+    const codigoVendedor = codigoVendedorInput.trim();
 
     if (!codigoVendedor) {
-      setStatusMessage("Não foi possível identificar o vendedor.");
+      setStatusMessage("Informe o código do vendedor.");
       return;
     }
 
@@ -423,9 +396,9 @@ export default function MeusContratos() {
     }
 
     const token = getAuthTokenAtual();
-    const codigoVendedor = getCodigoVendedorAtual();
+    const codigoVendedor = codigoVendedorInput.trim();
     if (!codigoVendedor) {
-      setStatusMessage("Não foi possível identificar o vendedor.");
+      setStatusMessage("Informe o código do vendedor.");
       return;
     }
 
@@ -433,18 +406,6 @@ export default function MeusContratos() {
     const end = dateInputToTimestampEnd(periodoFim);
     if (end < start) {
       setStatusMessage("A data final deve ser igual ou maior que a inicial.");
-      return;
-    }
-
-    const intervaloDias = Math.floor((end - start) / (24 * 60 * 60)) + 1;
-    if (intervaloDias > 60) {
-      await fetchAndSaveChunkedRange({
-        codigoVendedor,
-        token,
-        dataInicio: start,
-        dataFim: end,
-        chunkDays: 31,
-      });
       return;
     }
 
@@ -490,6 +451,14 @@ export default function MeusContratos() {
           ← Voltar
         </button>
         <h1>📊 Gestão de Clientes Loovi</h1>
+
+        {executivoProfile && (executivoProfile.nome || executivoProfile.email || executivoProfile.telFormatado) && (
+          <p className="executivo-logado">
+            {executivoProfile.nome || "Executivo Loovi"}
+            {executivoProfile.email ? ` • ${executivoProfile.email}` : ""}
+            {executivoProfile.telFormatado ? ` • ${executivoProfile.telFormatado}` : ""}
+          </p>
+        )}
 
         <div className="stats">
           <div className="stat-card">
@@ -550,6 +519,15 @@ export default function MeusContratos() {
 
       <div className="controls">
         <div className="filter-group" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "180px" }}>
+            Código do vendedor
+            <input
+              type="text"
+              placeholder="Código do vendedor"
+              value={codigoVendedorInput}
+              onChange={(event) => setCodigoVendedorInput(event.target.value)}
+            />
+          </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "180px" }}>
             Data início
             <input
