@@ -115,6 +115,12 @@
     box-shadow: 0 0 0 4px rgba(10, 61, 145, 0.15);
 }
 
+.section-title {
+    color: var(--color-main);
+    font-size: 1.1em;
+    width: 100%;
+}
+
 .filter-group {
     display: flex;
     gap: 10px;

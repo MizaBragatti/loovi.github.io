@@ -65,6 +65,15 @@ Gerado em: 01/07/2026
    Usada em: test.js (script usando axios + cheerio para extrair HTML)
 
 
+7. API de Busca de Vendedor/Executivo (dados cadastrais) - endpoint antigo "ObterVendedor"
+   URL: https://pag45vto72.execute-api.us-east-1.amazonaws.com/producao/v1/saphana/executivo/api/v1/{codigoVendedor}
+   Usada em: src/frontend/meuscontratos/script.js
+   Método: GET
+   -> Endpoint antigo (não traz o nome real do vendedor); citado como referência histórica
+      no comentário de src/lib/contratosApi.js (linha 10), que hoje usa o endpoint novo
+      (VENDEDOR_BASE_URL, sap-parceiro/executivo/portal) para essa busca.
+
+
 Observações:
 - As chaves/tokens de API (x-api-key, Authorization) estão hardcoded diretamente no código-fonte,
   o que representa um risco de segurança (exposição de credenciais no frontend).

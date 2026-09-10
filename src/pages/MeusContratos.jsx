@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../frontend/meuscontratos/style.css";
-import { fetchContratos, getCodigoVendedorFromToken, extractListaContratos } from "../lib/contratosApi";
+import { fetchContratos, fetchContratosLegado, getCodigoVendedorFromToken, extractListaContratos } from "../lib/contratosApi";
 import { endExpiredSession, getActiveAuthToken, getActiveContractsToken, hasActiveSession } from "../lib/authSession";
 import { getServerNowSeconds } from "../lib/jwt";
 
@@ -319,7 +319,7 @@ export default function MeusContratos() {
     if (iso) setPeriodoFim(iso);
   }
 
-  async function fetchAndSave({ codigoVendedor, token, dataInicio, dataFim, replace }) {
+  async function fetchAndSave({ codigoVendedor, token, dataInicio, dataFim, replace, legado }) {
     if (dataInicio > dataFim) {
       setStatusMessage("Período inválido. A data inicial não pode ser posterior à final.");
       return false;
@@ -331,7 +331,8 @@ export default function MeusContratos() {
     setLoading(true);
     setStatusMessage("");
     try {
-      const response = await fetchContratos(codigoVendedor, token, { dataInicio, dataFim });
+      const buscar = legado ? fetchContratosLegado : fetchContratos;
+      const response = await buscar(codigoVendedor, token, { dataInicio, dataFim });
       const lista = extractListaContratos(response) || [];
       const stored = loadStoredContracts(codigoVendedor);
       const existing = replace ? [] : stored.list || [];
@@ -386,7 +387,7 @@ export default function MeusContratos() {
       return;
     }
 
-    await fetchAndSave({ codigoVendedor, token, dataInicio: start, dataFim: end, replace: false });
+    await fetchAndSave({ codigoVendedor, token, dataInicio: start, dataFim: end, replace: false, legado: true });
   }
 
   async function handleBuscarPeriodo() {
@@ -409,7 +410,7 @@ export default function MeusContratos() {
       return;
     }
 
-    await fetchAndSave({ codigoVendedor, token, dataInicio: start, dataFim: end, replace: true });
+    await fetchAndSave({ codigoVendedor, token, dataInicio: start, dataFim: end, replace: true, legado: true });
   }
 
   const estatisticas = useMemo(() => {
@@ -451,6 +452,9 @@ export default function MeusContratos() {
           ← Voltar
         </button>
         <h1>📊 Gestão de Clientes Loovi</h1>
+        <p className="executivo-logado" style={{ opacity: 0.8 }}>
+          ⚙️ Busca automática: carrega os contratos do seu próprio código de vendedor ao abrir a página.
+        </p>
 
         {executivoProfile && (executivoProfile.nome || executivoProfile.email || executivoProfile.telFormatado) && (
           <p className="executivo-logado">
@@ -517,7 +521,8 @@ export default function MeusContratos() {
         </div>
       </div>
 
-      <div className="controls">
+      <div className="controls" style={{ flexDirection: "column", alignItems: "stretch" }}>
+        <h2 className="section-title">🔎 Busca manual por código de vendedor</h2>
         <div className="filter-group" style={{ flexWrap: "wrap", alignItems: "center" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "180px" }}>
             Código do vendedor
