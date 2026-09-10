@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../frontend/meuscontratos/style.css";
-import { fetchContratos, fetchContratosLegado, getCodigoVendedorFromToken, extractListaContratos } from "../lib/contratosApi";
+import { fetchContratos, fetchContratosVendedorLegado, getCodigoVendedorFromToken, extractListaContratos } from "../lib/contratosApi";
 import { endExpiredSession, getActiveAuthToken, getActiveContractsToken, hasActiveSession } from "../lib/authSession";
 import { getServerNowSeconds } from "../lib/jwt";
 
@@ -80,13 +80,16 @@ function getContractKey(cliente) {
   ).toString();
 }
 
-// A API nova (sap-contrato/ativos) não devolve statusFinanceiro/cancelado prontos;
-// derivamos de inDebito (inadimplência) e da presença de dataCancelamento.
+// A API nova (loovi-api) não devolve statusFinanceiro/cancelado prontos; derivamos
+// de inDebito (inadimplência) e da presença de dataCancelamento. Já a API antiga
+// (busca manual) traz esses campos prontos.
 function getStatusFinanceiro(cliente) {
+  if (cliente.statusFinanceiro) return cliente.statusFinanceiro;
   return cliente.inDebito ? "Inadimplente" : "Adimplente";
 }
 
 function getCancelado(cliente) {
+  if (typeof cliente.cancelado === "boolean") return cliente.cancelado;
   return Boolean(cliente.dataCancelamento);
 }
 
@@ -331,7 +334,7 @@ export default function MeusContratos() {
     setLoading(true);
     setStatusMessage("");
     try {
-      const buscar = legado ? fetchContratosLegado : fetchContratos;
+      const buscar = legado ? fetchContratosVendedorLegado : fetchContratos;
       const response = await buscar(codigoVendedor, token, { dataInicio, dataFim });
       const lista = extractListaContratos(response) || [];
       const stored = loadStoredContracts(codigoVendedor);

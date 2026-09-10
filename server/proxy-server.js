@@ -177,6 +177,13 @@ const server = http.createServer(async (req, res) => {
     console.log(`[proxy] SAP EXECUTIVO -> https://${targetHost}${targetPath}`)
   }
 
+  // Endpoint antigo "ObterVendedor" (lista completa de clientes do vendedor) via proxy local.
+  else if (req.url.startsWith('/api/proxy/api/saphana-executivo/')) {
+    targetHost = 'pag45vto72.execute-api.us-east-1.amazonaws.com'
+    targetPath = '/producao/v1/saphana/executivo/api/v1' + req.url.slice('/api/proxy/api/saphana-executivo'.length)
+    console.log(`[proxy] SAPHANA EXECUTIVO -> https://${targetHost}${targetPath}`)
+  }
+
   // Rota não existente
   else {
     console.warn(`[proxy] rota não encontrada: ${req.method} ${req.url}`)

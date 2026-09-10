@@ -14,6 +14,11 @@ const VENDEDOR_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost
 // para a busca manual por código de vendedor arbitrário usamos este proxy, que
 // aceita qualquer slp e não depende do que já foi ingerido no banco novo.
 const CONTRATOS_LEGADO_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/sap-contrato/ativos`
+// Endpoint antigo "ObterVendedor" (o mesmo usado antes em src/frontend/meuscontratos/script.js).
+// Chamado via proxy local (chamada direta do navegador é bloqueada por CORS) - devolve
+// a lista completa de clientes/contratos do vendedor de uma vez, sem paginação nem
+// filtro de período. Usado pela busca manual.
+const CONTRATOS_VENDEDOR_LEGADO_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/saphana-executivo`
 
 function toDateParam(unixSeconds) {
   return new Date(unixSeconds * 1000).toISOString().slice(0, 10)
@@ -202,6 +207,24 @@ export async function fetchContratosLegado(codigoVendedor, token, { dataInicio, 
   } while (cursor)
 
   return itens
+}
+
+// Busca contratos no endpoint antigo "ObterVendedor" (via proxy), sem token/período
+// (a API não os aceita) - retorna a lista completa de clientes do vendedor.
+export async function fetchContratosVendedorLegado(codigoVendedor) {
+  const res = await fetch(`${CONTRATOS_VENDEDOR_LEGADO_BASE_URL}/${String(codigoVendedor).trim()}`, {
+    method: 'GET',
+    headers: {
+      'content-type': 'application/json',
+      Authorization: 'Bearer ',
+    },
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[contratos-vendedor-legado] falha ao buscar contratos (${res.status}):`, body)
+    throw new Error('Não foi possível carregar os contratos no período selecionado. Tente novamente em instantes.')
+  }
+  return res.json()
 }
 
 export function extractListaContratos(data) {
