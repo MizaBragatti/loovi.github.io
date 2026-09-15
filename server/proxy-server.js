@@ -163,13 +163,6 @@ const server = http.createServer(async (req, res) => {
     console.log(`[proxy] SAP COTACAO -> https://${targetHost}${targetPath}`)
   }
 
-  // Contratos ativos do vendedor (SAP) via proxy local (evita CORS no navegador).
-  else if (req.url.startsWith('/api/proxy/api/sap-contrato/ativos')) {
-    targetHost = 'api-gateway.loovi.app.br'
-    targetPath = req.url.slice('/api/proxy'.length)
-    console.log(`[proxy] SAP CONTRATO -> https://${targetHost}${targetPath}`)
-  }
-
   // Dados cadastrais do executivo/vendedor (nome/email/telefone reais) via proxy local.
   else if (req.url.startsWith('/api/proxy/api/sap-parceiro/executivo/portal/')) {
     targetHost = 'api-gateway.loovi.app.br'

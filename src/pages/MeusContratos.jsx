@@ -7,6 +7,7 @@ import { getServerNowSeconds } from "../lib/jwt";
 
 const STORAGE_LIST = (codigo) => `meuscontratos_data_${codigo}`;
 const STORAGE_RANGE = (codigo) => `meuscontratos_range_${codigo}`;
+const STORAGE_ULTIMO_CODIGO = "meuscontratos_ultimo_codigo";
 
 function getAuthTokenAtual() {
   return getActiveContractsToken() || "";
@@ -25,8 +26,15 @@ function getNowSeconds() {
   return getServerNowSeconds(token) ?? Math.floor(Date.now() / 1000);
 }
 
+// Usa componentes de data locais (não toISOString, que é UTC) para bater com
+// dateInputToTimestampStart/End, que interpretam o valor como horário local -
+// caso contrário, à noite no fuso do Brasil (UTC-3) o "hoje" virava amanhã.
 function timestampToDateInput(ts) {
-  return new Date(ts * 1000).toISOString().slice(0, 10);
+  const d = new Date(ts * 1000);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function dateInputToTimestampStart(value) {
@@ -247,9 +255,11 @@ export default function MeusContratos() {
   const [searchInput, setSearchInput] = useState("");
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
-  // Prefeenchido com o código do vendedor logado, mas editável - permite
-  // buscar contratos de qualquer código de vendedor, não só o do usuário atual.
-  const [codigoVendedorInput, setCodigoVendedorInput] = useState(() => getCodigoVendedorAtual() || "");
+  // Prefeenchido com o último código buscado (persistido, para não perder a
+  // busca manual ao dar F5) ou, na falta dele, com o do vendedor logado.
+  const [codigoVendedorInput, setCodigoVendedorInput] = useState(
+    () => localStorage.getItem(STORAGE_ULTIMO_CODIGO) || getCodigoVendedorAtual() || ""
+  );
   const [periodoInicioText, setPeriodoInicioText] = useState("");
   const [periodoFimText, setPeriodoFimText] = useState("");
   const [storedRange, setStoredRange] = useState(null);
@@ -266,23 +276,25 @@ export default function MeusContratos() {
       return;
     }
 
-    const codigoVendedor = getCodigoVendedorAtual();
+    const codigoLogado = getCodigoVendedorAtual();
+    // Restaura os dados do último código pesquisado (própria busca manual
+    // inclusive), não só do vendedor logado - evita "perder" o histórico ao dar F5.
+    const codigoVendedor = codigoVendedorInput.trim() || codigoLogado;
     if (!codigoVendedor) return;
 
     const stored = loadStoredContracts(codigoVendedor);
     if (stored.list && stored.list.length > 0) {
       setClientesData(stored.list);
       setStoredRange(stored.range);
-    } else {
+    } else if (codigoVendedor === codigoLogado) {
       // Sem cache local (primeiro acesso ou dados limpos), busca automaticamente
-      // os últimos 3 anos para trazer o histórico de contratos do vendedor
-      // sem exigir ação do usuário (contratos costumam ser bem mais antigos que 30 dias).
+      // o último mês para trazer o histórico recente do vendedor sem exigir ação do usuário.
       const token = getAuthTokenAtual();
       const now = getNowSeconds();
       fetchAndSave({
         codigoVendedor,
         token,
-        dataInicio: now - 1095 * 24 * 60 * 60,
+        dataInicio: now - 30 * 24 * 60 * 60,
         dataFim: now,
         replace: true,
       });
@@ -290,14 +302,17 @@ export default function MeusContratos() {
   }, []);
 
   useEffect(() => {
-    if (storedRange?.start && storedRange?.end) {
-      setPeriodoInicio(timestampToDateInput(storedRange.start));
-      setPeriodoFim(timestampToDateInput(storedRange.end));
-    } else {
-      const now = getNowSeconds();
-      setPeriodoInicio(timestampToDateInput(now - 1095 * 24 * 60 * 60));
-      setPeriodoFim(timestampToDateInput(now));
+    if (codigoVendedorInput.trim()) {
+      localStorage.setItem(STORAGE_ULTIMO_CODIGO, codigoVendedorInput.trim());
     }
+  }, [codigoVendedorInput]);
+
+  // Data fim sempre é a data atual - só a inicial pode vir de um range salvo
+  // (senão o campo ficava preso à última busca/carga em vez de "hoje").
+  useEffect(() => {
+    const now = getNowSeconds();
+    setPeriodoInicio(timestampToDateInput(storedRange?.start ?? now - 30 * 24 * 60 * 60));
+    setPeriodoFim(timestampToDateInput(now));
   }, [storedRange]);
 
   useEffect(() => {

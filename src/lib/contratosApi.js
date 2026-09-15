@@ -9,11 +9,6 @@ const CONTRATOS_BASE_URL = `${import.meta.env.VITE_LOOVI_API_URL || 'http://loca
 // cadastrais do executivo - devolve o nome real (ex: "nomeCliente"), diferente
 // do endpoint antigo ObterVendedor (pag45vto72...) que não trazia o nome.
 const VENDEDOR_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/sap-parceiro/executivo/portal`
-// Endpoint antigo (proxy -> api-gateway.loovi.app.br direto). O backend novo
-// (loovi-api) só tem em base os contratos do slp ingerido via carga (LOOVI_SLP);
-// para a busca manual por código de vendedor arbitrário usamos este proxy, que
-// aceita qualquer slp e não depende do que já foi ingerido no banco novo.
-const CONTRATOS_LEGADO_BASE_URL = `${import.meta.env.VITE_PROXY_URL || 'http://localhost:8787'}/api/proxy/api/sap-contrato/ativos`
 // Endpoint antigo "ObterVendedor" (o mesmo usado antes em src/frontend/meuscontratos/script.js).
 // Chamado via proxy local (chamada direta do navegador é bloqueada por CORS) - devolve
 // a lista completa de clientes/contratos do vendedor de uma vez, sem paginação nem
@@ -133,86 +128,15 @@ export async function fetchContratos(codigoVendedor, token, { dataInicio, dataFi
   return itens
 }
 
-async function fetchContratosPageLegado(codigoVendedor, token, { dataInicio, dataFim, cursor } = {}) {
-  const fim = dataFim ?? Math.floor(Date.now() / 1000)
-  const inicio = dataInicio ?? fim - 30 * 24 * 60 * 60
-  const params = new URLSearchParams({
-    slp: String(codigoVendedor).trim(),
-    startDateFrom: toDateParam(inicio),
-    startDateTo: toDateParam(fim),
-    apenasVigentes: 'false',
-    incluirItens: 'true',
-    take: '100',
-  })
-  if (cursor) params.set('cursor', cursor)
-  const url = `${CONTRATOS_LEGADO_BASE_URL}?${params.toString()}&_ts=${Date.now()}`
-  const headers = {
-    requester: 'Portal',
-    Accept: 'application/json',
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
+// Busca contratos no endpoint antigo "ObterVendedor" (via proxy), sem token
+// (a API não o aceita) - aceita filtro de período via startDateFrom/startDateTo.
+export async function fetchContratosVendedorLegado(codigoVendedor, token, { dataInicio, dataFim } = {}) {
+  const params = new URLSearchParams()
+  if (dataInicio) params.set('startDateFrom', toDateParam(dataInicio))
+  if (dataFim) params.set('startDateTo', toDateParam(dataFim))
+  const query = params.toString() ? `?${params.toString()}` : ''
 
-  const res = await fetch(url, { headers })
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    console.error(`[contratos-legado] falha ao buscar contratos (${res.status}):`, body)
-
-    if (res.status === 401 || res.status === 403) {
-      endExpiredSession()
-      throw new Error(SESSION_EXPIRED_MESSAGE)
-    }
-
-    if (res.status === 400) {
-      throw new Error('Período inválido para consulta. Ajuste as datas e tente novamente.')
-    }
-
-    if (res.status >= 500) {
-      throw new Error('Serviço de contratos indisponível no momento. Tente novamente em instantes.')
-    }
-
-    throw new Error('Não foi possível carregar os contratos no período selecionado. Tente novamente em instantes.')
-  }
-
-  const body = await res.json()
-  if (body?.success === false) {
-    throw new Error(body.message || 'Não foi possível carregar os contratos no período selecionado.')
-  }
-  return body
-}
-
-// Busca contratos direto na Loovi (via proxy), aceitando qualquer código de
-// vendedor - usada pela busca manual em "Meus Contratos", já que o backend
-// novo (loovi-api) só tem os dados do vendedor configurado na ingestão.
-export async function fetchContratosLegado(codigoVendedor, token, { dataInicio, dataFim } = {}) {
-  let cursor = null
-  const cursoresVistos = new Set()
-  const itens = []
-  let paginas = 0
-
-  do {
-    const page = await fetchContratosPageLegado(codigoVendedor, token, { dataInicio, dataFim, cursor })
-    itens.push(...extractListaContratos(page))
-    paginas += 1
-
-    const nextCursor = page?.data?.nextCursor ?? null
-    if (!nextCursor) break
-
-    if (cursoresVistos.has(nextCursor) || paginas >= MAX_PAGINAS_CONTRATOS) {
-      console.warn('[contratos-legado] cursor não avança (repetido ou ciclo detectado), interrompendo paginação.')
-      break
-    }
-
-    cursoresVistos.add(nextCursor)
-    cursor = nextCursor
-  } while (cursor)
-
-  return itens
-}
-
-// Busca contratos no endpoint antigo "ObterVendedor" (via proxy), sem token/período
-// (a API não os aceita) - retorna a lista completa de clientes do vendedor.
-export async function fetchContratosVendedorLegado(codigoVendedor) {
-  const res = await fetch(`${CONTRATOS_VENDEDOR_LEGADO_BASE_URL}/${String(codigoVendedor).trim()}`, {
+  const res = await fetch(`${CONTRATOS_VENDEDOR_LEGADO_BASE_URL}/${String(codigoVendedor).trim()}${query}`, {
     method: 'GET',
     headers: {
       'content-type': 'application/json',
